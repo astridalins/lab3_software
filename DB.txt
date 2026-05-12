@@ -1,0 +1,13 @@
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name VARCHAR(20) NOT NULL,
+  password VARCHAR(20) NOT NULL,
+  colla VARCHAR(100) NOT NULL,
+  username VARCHAR(50) NOT NULL,
+  location VARCHAR(100) NOT NULL,
+  userType VARCHAR(20) NOT NULL,
+  email VARCHAR(100) NOT NULL,
+  posicions VARCHAR(100),
+  picture VARCHAR(255)
+
+);
