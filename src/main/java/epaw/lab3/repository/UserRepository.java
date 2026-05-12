@@ -51,9 +51,9 @@ public class UserRepository extends BaseRepository {
     }
 
     public boolean checkLogin(User user) {
-        String query = "SELECT id, picture from users where name=? AND password=?";
+        String query = "SELECT id, picture from users where username=? AND password=?";
         try (PreparedStatement statement = db.prepareStatement(query)) {
-            statement.setString(1, user.getName());
+            statement.setString(1, user.getUsername());
             statement.setString(2, user.getPassword());
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {

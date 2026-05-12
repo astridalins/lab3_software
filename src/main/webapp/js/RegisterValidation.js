@@ -13,6 +13,19 @@ App.initRegisterValidation = function (serverErrors)  {
 	});
 	
 	
+	const userType = document.getElementById('userType');
+	const posicionsContainer = document.getElementById('posicionsContainer');
+	const collaContainer = document.getElementById('collaContainer');
+
+	function toggleCasteller() {
+		const isCasteller = userType.value === 'casteller';
+		posicionsContainer.style.display = isCasteller ? 'block' : 'none';
+		collaContainer.style.display = isCasteller ? 'block' : 'none';
+	}
+
+	userType.addEventListener('change', toggleCasteller);
+	toggleCasteller();
+
 	Object.entries(serverErrors).forEach(([field, message]) => {
 	  const input = document.getElementsByName(field)[0];
 	  if (input) {

@@ -6,9 +6,9 @@
 <form id="registerForm" action="Register" method="POST" enctype="multipart/form-data">
 
     <div>
-        <label for="name" class="w3-text-theme">Username</label>
+        <label for="name" class="w3-text-theme">Name</label>
         <input class="w3-input w3-border w3-light-grey" type="text" id="name" name="name" required minlength="5" maxlength="20"
-            value="${user.name}" title="Username must be between 5 and 20 characters." />
+            value="${user.name}" title="Name must be between 5 and 20 characters." />
     </div>
 
     <div>
@@ -28,24 +28,6 @@
     <div>
         <label for="picture" class="w3-text-theme">Profile Picture</label>
         <input class="w3-input w3-border w3-light-grey" type="file" id="picture" name="picture" accept="image/*" />
-    </div>
-    <div>
-        <label class="w3-text-grey">Colla castellera</label>
-        
-        <input class="w3-input w3-border" 
-            list="collesList"
-            name="colla"
-            id="colla"
-            required value="${user.colla}"
-            placeholder="Escriu o selecciona una colla" />
-
-        <datalist id="collesList">
-            <option value="Castellers de Vilafranca">
-            <option value="Colla Vella dels Xiquets de Valls">
-            <option value="Colla Joves Xiquets de Valls">
-            <option value="Minyons de Terrassa">
-            <option value="Capgrossos de Mataró">
-        </datalist>
     </div>
     <div>
         <label class="w3-text-grey">Username</label>
@@ -102,6 +84,23 @@
                 <option value="manilles"    ${fn:contains(user.posicions, 'manilles')    ? 'selected' : ''}>Manilles</option>
             </select>
         </p>
+    </div>
+
+    <div id="collaContainer" style="display:none">
+        <label class="w3-text-grey">Colla castellera</label>
+        <input class="w3-input w3-border"
+            list="collesList"
+            name="colla"
+            id="colla"
+            value="${user.colla}"
+            placeholder="Escriu o selecciona una colla" />
+        <datalist id="collesList">
+            <option value="Castellers de Vilafranca">
+            <option value="Colla Vella dels Xiquets de Valls">
+            <option value="Colla Joves Xiquets de Valls">
+            <option value="Minyons de Terrassa">
+            <option value="Capgrossos de Mataró">
+        </datalist>
     </div>
 
     <div>

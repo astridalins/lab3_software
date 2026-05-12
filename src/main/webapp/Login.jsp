@@ -4,9 +4,9 @@
 <form id="loginForm" action="Login" method="POST">
 
 	<div>
-		<label for="name" class="w3-text-theme">Name:</label> 
+		<label for="username" class="w3-text-theme">Username:</label> 
 		<input type="text" class="w3-input w3-border w3-light-grey" 
-		    id="name" name="name" required minlength="5" maxlength="20" value="${user.name}"
+		    id="username" name="username" required minlength="5" maxlength="20" value="${user.username}"
 			title="Username must be between 5 and 20 characters." />
 	</div>
 	<div>
