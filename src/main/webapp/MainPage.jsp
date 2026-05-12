@@ -1,6 +1,12 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
+
 <div class="w3-row-padding" style="margin-top:20px;">
+
+   <script>
+    $('#lcolumn').html('');
+    $('#rcolumn').html('');
+  </script>
 
     <!-- ESQUERRA: DIADES -->
     <div class="w3-col m3">
