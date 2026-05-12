@@ -66,7 +66,7 @@
                 <configuration>
                     <scan>1</scan>
                     <webApp>
-                        <tempDirectory>${project.build.directory}/tmp</tempDirectory>
+                        <tempDirectory>${java.io.tmpdir}/jetty-lab3</tempDirectory>
                         <resourceBases>
                             <resourceBase>${project.basedir}/src/main/webapp</resourceBase>
                             <resourceBase>${project.basedir}/EXTERNAL_RESOURCES</resourceBase>

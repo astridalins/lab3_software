@@ -23,9 +23,23 @@ public class UserRepository extends BaseRepository {
     }
 
     public boolean existsByUsername(String username) {
-        String query = "SELECT COUNT(*) FROM users WHERE name = ?";
+        String query = "SELECT COUNT(*) FROM users WHERE username = ?";
         try (PreparedStatement statement = db.prepareStatement(query)) {
             statement.setString(1, username);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean existsByEmail(String email) {
+        String query = "SELECT COUNT(*) FROM users WHERE email = ?";
+        try (PreparedStatement statement = db.prepareStatement(query)) {
+            statement.setString(1, email);
             ResultSet rs = statement.executeQuery();
             if (rs.next()) {
                 return rs.getInt(1) > 0;
@@ -73,7 +87,7 @@ public class UserRepository extends BaseRepository {
     }
 
     public Optional<User> findByName(String username) {
-        String query = "SELECT id, username, password, picture FROM users WHERE name = ?";
+        String query = "SELECT id, username, password, picture, email FROM users WHERE name = ?";
         try (PreparedStatement statement = db.prepareStatement(query)) {
             statement.setString(1, username);
             ResultSet rs = statement.executeQuery();
@@ -83,6 +97,7 @@ public class UserRepository extends BaseRepository {
                 user.setUsername(rs.getString("username"));
                 user.setPassword(rs.getString("password"));
                 user.setPicture(rs.getString("picture"));
+                user.setEmail(rs.getString("email"));
                 return Optional.of(user);
             }
         } catch (SQLException e) {
