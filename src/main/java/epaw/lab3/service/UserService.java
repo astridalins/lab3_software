@@ -125,6 +125,8 @@ public class UserService {
         Map<String, String> errors = validate(user);
         if (errors.isEmpty()) {
             userRepository.save(user);
+        } else {
+            System.out.println("[REGISTER] Validation errors: " + errors);
         }
         return errors;
     }
