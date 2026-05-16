@@ -66,15 +66,85 @@ pageEncoding="UTF-8"%>
             <c:choose>
 
                 <c:when test="${diada == 'SantJordi'}">
+
                     <p>Informació de Sant Jordi...</p>
+
+                    <!-- BOTÓ VALORACIÓ -->
+                    <div class="w3-margin-top">
+
+                        <button class="w3-button w3-theme" onclick="showRatingInfo()">
+                            Valorar diada
+                        </button>
+
+                        <!-- ESTRELLES -->
+                        <div class="rating" onmouseleave="resetStars()">
+
+                            <span class="star" data-value="1" onclick="setRating(1)">★</span>
+                            <span class="star" data-value="2" onclick="setRating(2)">★</span>
+                            <span class="star" data-value="3" onclick="setRating(3)">★</span>
+                            <span class="star" data-value="4" onclick="setRating(4)">★</span>
+                            <span class="star" data-value="5" onclick="setRating(5)">★</span>
+
+                        </div>
+
+                        <p id="ratingText"></p>
+
+                    </div>
+
                 </c:when>
 
                 <c:when test="${diada == 'Mercè'}">
                     <p>Informació de la Mercè...</p>
+
+                    <!-- BOTÓ VALORACIÓ -->
+                    <div class="w3-margin-top">
+
+                        <button class="w3-button w3-theme" onclick="showRatingInfo()">
+                            Valorar diada
+                        </button>
+
+                        <!-- ESTRELLES -->
+                        <div class="rating" onmouseleave="resetStars()">
+
+                            <span class="star" data-value="1" onclick="setRating(1)">★</span>
+                            <span class="star" data-value="2" onclick="setRating(2)">★</span>
+                            <span class="star" data-value="3" onclick="setRating(3)">★</span>
+                            <span class="star" data-value="4" onclick="setRating(4)">★</span>
+                            <span class="star" data-value="5" onclick="setRating(5)">★</span>
+
+                        </div>
+
+                        <p id="ratingText"></p>
+
+                    </div>
+
                 </c:when>
 
                 <c:when test="${diada == 'Valls'}">
                     <p>Informació de Valls...</p>
+
+                    <!-- BOTÓ VALORACIÓ -->
+                    <div class="w3-margin-top">
+
+                        <button class="w3-button w3-theme" onclick="showRatingInfo()">
+                            Valorar diada
+                        </button>
+
+                        <!-- ESTRELLES -->
+                        <div class="rating" onmouseleave="resetStars()">
+
+                            <span class="star" data-value="1" onclick="setRating(1)">★</span>
+                            <span class="star" data-value="2" onclick="setRating(2)">★</span>
+                            <span class="star" data-value="3" onclick="setRating(3)">★</span>
+                            <span class="star" data-value="4" onclick="setRating(4)">★</span>
+                            <span class="star" data-value="5" onclick="setRating(5)">★</span>
+
+                        </div>
+
+                        <p id="ratingText"></p>
+
+                    </div>
+
                 </c:when>
 
                 <c:otherwise>
@@ -86,5 +156,82 @@ pageEncoding="UTF-8"%>
         </div>
 
     </div>
+    
+    <%-- ESTRELLES  --%>
 
+        <script>
+
+        let currentRating = 0;
+
+        function initRating() {
+
+            const stars = document.querySelectorAll(".star");
+
+            stars.forEach((star, index) => {
+
+                star.addEventListener("mouseover", () => {
+                    highlight(index);
+                });
+
+                star.addEventListener("click", () => {
+                    setRating(index + 1);
+                });
+            });
+
+            const box = document.querySelector(".rating");
+            if (box) {
+                box.addEventListener("mouseleave", resetHover);
+            }
+        }
+
+        function highlight(index) {
+
+            const stars = document.querySelectorAll(".star");
+
+            stars.forEach((star, i) => {
+                if (i <= index) {
+                    star.classList.add("hover");
+                } else {
+                    star.classList.remove("hover");
+                }
+            });
+        }
+
+        function resetHover() {
+
+            const stars = document.querySelectorAll(".star");
+
+            stars.forEach(star => {
+                star.classList.remove("hover");
+            });
+
+            paintRating();
+        }
+
+        function setRating(value) {
+            currentRating = value;
+            paintRating();
+
+            document.getElementById("ratingText").innerText =
+                "Has valorat amb " + value + " estrella(es)";
+        }
+
+        function paintRating() {
+
+            const stars = document.querySelectorAll(".star");
+
+            stars.forEach((star, i) => {
+                star.classList.toggle("active", i < currentRating);
+            });
+        }
+
+        /* 💬 MISSATGE BOTÓ */
+        function showReviewMessage() {
+            alert("Aquí podràs escriure les teves ressenyes i valorar la diada ⭐\n(encara no implementat)");
+        }
+
+        /* 🔥 IMPORTANT SPA */
+        initRating();
+
+        </script>
 </div>

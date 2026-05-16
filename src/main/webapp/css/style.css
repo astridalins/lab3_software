@@ -221,6 +221,37 @@ footer {
     }
 }
 
+
+
+/* =======================================================
+   MAIN PAGE
+   ======================================================= */
+
+#createPostBtn {
+    position: fixed;
+    bottom: 90px;
+    right: 30px;
+    width: 65px;
+    height: 65px;
+    z-index: 1000;
+
+    font-size: 35px;
+    font-weight: bold;
+
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+#createPostBtn:hover {
+    transform: scale(1.1);
+    transition: 0.2s;
+}
+
+
+
+/* =======================================================
+   THEME
+   ======================================================= */
+
 .w3-theme-l5 { color: var(--text); background-color: var(--bg); }
 .w3-theme-l4 { color: var(--text); background-color: #e2e8f0; }
 .w3-theme-l3 { color: var(--text); background-color: #cbd5e1; }
@@ -259,4 +290,44 @@ footer {
 .w3-hover-theme:hover {
     background-color: var(--primary-hover) !important;
     color: white !important;
+}
+
+/* =======================================================
+   Rating
+   ======================================================= */
+.rating {
+    font-size: 35px;
+    cursor: pointer;
+    user-select: none;
+    display: inline-block;
+}
+
+/* estat base */
+.star {
+    color: #ccc;
+    transition: 0.2s;
+}
+
+/* hover individual */
+.star:hover {
+    color: gold;
+}
+
+/* 🔥 clau: quan passes per sobre, pinta aquesta i totes les anteriors */
+.rating:hover .star {
+    color: #ccc;
+}
+
+.rating .star:hover,
+.rating .star:hover ~ .star {
+    color: #ccc;
+}
+
+/* millor solució: amb JS + classe hover */
+.star.hovered {
+    color: gold;
+}
+
+.star.active {
+    color: gold;
 }
