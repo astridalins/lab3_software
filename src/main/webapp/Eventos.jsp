@@ -13,7 +13,7 @@ pageEncoding="UTF-8"%>
   </script>
 
     <!-- ESQUERRA -->
-    <div style="width:20%; float:left;">
+    <div class="w3-col m3">
 
         <div class="w3-card w3-white w3-padding">
 
@@ -54,7 +54,7 @@ pageEncoding="UTF-8"%>
     </div>
 
     <!-- DRETA -->
-    <div style="width:80%; float:left;">
+    <div class="w3-col m9">
 
         <div class="w3-card w3-white w3-padding"
              style="height:80vh;">

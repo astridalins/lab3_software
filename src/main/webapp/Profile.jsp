@@ -1,17 +1,51 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
+
 <c:choose>
-<c:when test="${not empty user}">
-<div id="${user.id}" class="w3-container w3-card w3-round w3-white w3-section w3-center">
-  <h1 class="w3-text-theme">U</h1>
-  <p><img src="${user.picture}" class="w3-circle" style="height:106px;width:106px" alt="Avatar"></p>
-  <hr>
-  <p class="w3-left-align"> <i class="fa fa-id-card fa-fw w3-margin-right"></i> ${user.name} </p>
- </div>
-<br>
-</c:when>
-<c:otherwise>
-<p/>
-</c:otherwise>
+
+    <c:when test="${not empty user}">
+
+        <div id="${user.id}"
+             class="w3-container w3-card w3-round w3-white w3-padding w3-margin-bottom">
+
+            <div class="w3-center">
+
+                <h2 class="w3-text-theme">Perfil</h2>
+
+                <img src="${user.picture}"
+                     class="w3-circle"
+                     style="height:120px;width:120px"
+                     alt="Avatar">
+
+                <h3>${user.name}</h3>
+
+            </div>
+
+            <hr>
+
+            <p><b>Username:</b> ${user.username}</p>
+
+            <p><b>Email:</b> ${user.email}</p>
+
+            <p><b>Localitat:</b> ${user.location}</p>
+
+            <p><b>Tipus usuari:</b> ${user.userType}</p>
+
+            <p><b>Colla:</b> ${user.colla}</p>
+
+            <p><b>Posicions:</b> ${user.posicions}</p>
+
+        </div>
+
+    </c:when>
+
+    <c:otherwise>
+
+        <div class="w3-panel w3-yellow">
+            <p>No hi ha usuari logejat.</p>
+        </div>
+
+    </c:otherwise>
+
 </c:choose>
