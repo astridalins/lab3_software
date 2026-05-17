@@ -21,10 +21,10 @@ public class Content extends HttpServlet {
 			throws ServletException, IOException {
 
 		HttpSession session = request.getSession(false);
-		String view = "Login";
+		String view = "MainPage.jsp";
 
-		if (session != null && session.getAttribute("user") != null)
-			view = "Welcome.jsp";
+		if (session == null || session.getAttribute("user") == null)
+			view = "Login.jsp";
 
 		request.getRequestDispatcher(view).forward(request, response);
 	}
