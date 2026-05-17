@@ -50,15 +50,25 @@ public class UserRepository extends BaseRepository {
         return false;
     }
 
+    // abans SELECT id, picture ara SELECT * 
     public boolean checkLogin(User user) {
-        String query = "SELECT id, picture from users where username=? AND password=?";
+        String query = "SELECT * FROM users WHERE username=? AND password=?";
+
         try (PreparedStatement statement = db.prepareStatement(query)) {
             statement.setString(1, user.getUsername());
             statement.setString(2, user.getPassword());
+
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
                     user.setId(rs.getInt("id"));
+                    user.setName(rs.getString("name"));
                     user.setPicture(rs.getString("picture"));
+                    user.setColla(rs.getString("colla"));
+                    user.setUsername(rs.getString("username"));
+                    user.setLocation(rs.getString("location"));
+                    user.setUserType(rs.getString("userType"));
+                    user.setEmail(rs.getString("email"));
+                    user.setPosicions(rs.getString("posicions"));
                     return true;
                 }
             }

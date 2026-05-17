@@ -12,6 +12,7 @@ public class DBManager {
 	private static DBManager instance;
 	private Connection connection = null;
 	private static final String DB_FILE = "lab3.db";
+	
 
 	private DBManager() {
 		try {

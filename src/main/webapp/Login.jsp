@@ -10,7 +10,7 @@
 			title="Username must be between 5 and 20 characters." />
 	</div>
 	<div>
-		<label for="password" class="w3-text-theme">Password:</label> 
+		<label for="password" class="w3-text-theme">Contrasenya:</label> 
 		<input type="password" class="w3-input w3-border w3-light-grey" 
 			id="password" name="password" required
 			pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$"
