@@ -1,4 +1,7 @@
+DROP DATABASE IF EXISTS casteller_social;
+
 CREATE DATABASE casteller_social;
+
 USE casteller_social;
 
 -- =========================
