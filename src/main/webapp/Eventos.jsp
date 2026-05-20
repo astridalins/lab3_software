@@ -6,6 +6,7 @@ pageEncoding="UTF-8"%>
 
 <%@ page import="epaw.lab3.model.User" %>
 
+<div style="background-image: url('assets/concurs.jpeg'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100vh; margin: -50px -9999px; padding: 50px 9999px 24px;">
 <div class="w3-row-padding" style="margin-top:20px;">
 
 
@@ -249,4 +250,5 @@ pageEncoding="UTF-8"%>
         initRating();
 
         </script>
+</div>
 </div>

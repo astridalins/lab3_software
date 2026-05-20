@@ -3,6 +3,7 @@
 
 <c:set var="user" value="${sessionScope.user}" />
 
+<div style="background-image: url('assets/castellers_colors.jpg'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100vh; margin: -50px -9999px; padding: 50px 9999px 24px;">
 <div class="w3-container w3-padding">
 
     <h2 class="w3-text-theme">Usuaris</h2>
@@ -81,4 +82,5 @@
 
     </c:if>
 
+</div>
 </div>

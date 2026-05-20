@@ -2,6 +2,7 @@
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 
+<div style="background-image: url('assets/castell_colors_closeup.jpg'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100vh; margin: -50px -9999px; padding: 50px 9999px 24px;">
 <c:choose>
 
     <c:when test="${not empty user}">
@@ -49,3 +50,4 @@
     </c:otherwise>
 
 </c:choose>
+</div>
