@@ -34,10 +34,11 @@
                     <td>${u.email}</td>
                     <td>${u.userType}</td>
                     <td>
-                        <a href="DeleteUser?id=${u.id}"
-                           class="w3-button w3-red w3-small">
-                            🗑
-                        </a>
+                    <a href="javascript:void(0)"
+                    class="w3-button w3-red w3-small"
+                    onclick="showDeleteMessage()">
+                        🗑
+                    </a>
                     </td>
                 </tr>
 
@@ -82,3 +83,9 @@
     </c:if>
 
 </div>
+
+<script>
+function showDeleteMessage() {
+    alert("⚠️ Aquesta funcionalitat encara no està implementada.\n\nCom a admin podràs eliminar usuaris en el futur.");
+}
+</script>

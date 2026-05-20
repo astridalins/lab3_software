@@ -23,7 +23,9 @@ public class UserRepository extends BaseRepository {
         }
         return instance;
     }
-    
+
+
+    //FUNCIONS AFEGIDES
     public List<User> findAll() {
 
         List<User> users = new ArrayList<>();
@@ -57,8 +59,21 @@ public class UserRepository extends BaseRepository {
 
         return users;
     }
+    // public void deleteById(int id) {
 
+    //     String query = "DELETE FROM users WHERE id = ?";
 
+    //     try (PreparedStatement statement = db.prepareStatement(query)) {
+
+    //         statement.setInt(1, id);
+    //         statement.executeUpdate();
+
+    //     } catch (SQLException e) {
+    //         e.printStackTrace();
+    //     }
+    // }
+
+    // NO MES FUNCIONS AFEGIDES
     public boolean existsByUsername(String username) {
         String query = "SELECT COUNT(*) FROM users WHERE username = ?";
         try (PreparedStatement statement = db.prepareStatement(query)) {
@@ -95,6 +110,7 @@ public class UserRepository extends BaseRepository {
             statement.setString(1, user.getUsername());
             statement.setString(2, user.getPassword());
 
+                // TOCAT PER FER FUNCIONAR EL PROFILE I CARREGAR ELS USERS COMPLERTS
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
                     user.setId(rs.getInt("id"));
