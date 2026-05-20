@@ -1,6 +1,9 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core"%>
 
+<div style="background-image: url('assets/castell_lila.jpg'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100vh; margin: -50px -9999px; padding: 50px 9999px 24px;">
+<div>
+
 <form id="loginForm" action="Login" method="POST">
 
 	<div>
@@ -29,5 +32,8 @@
 	    "${error.key}": "${error.value}",
 	  </c:forEach>
 	};
-	App.initLoginValidation(App.Errors);	
+	App.initLoginValidation(App.Errors);
 </script>
+
+</div>
+</div>

@@ -2,6 +2,7 @@
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 
+<div style="background-image: url('assets/castell_lateral.png'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100vh; margin: -50px -9999px; padding: 50px 9999px 24px;">
 <div class="w3-card w3-white w3-padding w3-round-large w3-margin">
 
     <h2 class="w3-text-theme">Benvingut 👋</h2>
@@ -46,4 +47,5 @@
 
     </div>
 
+</div>
 </div>

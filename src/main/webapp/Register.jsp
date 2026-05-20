@@ -3,6 +3,9 @@
 <%@ taglib prefix="fn" uri="jakarta.tags.functions"%>
 
 
+<div style="background-image: url('assets/manos2.jpg'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100vh; margin: -50px -9999px; padding: 50px 9999px 24px;">
+<div>
+
 <form id="registerForm" action="Register" method="POST" enctype="multipart/form-data">
 
     <div>
@@ -118,6 +121,8 @@
 
 </form>
 
+</div>
+</div>
 
 <script>
 	App.Errors = {
