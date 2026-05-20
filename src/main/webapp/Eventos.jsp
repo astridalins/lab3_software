@@ -4,7 +4,10 @@ pageEncoding="UTF-8"%>
 
 <%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
+<%@ page import="epaw.lab3.model.User" %>
+
 <div class="w3-row-padding" style="margin-top:20px;">
+
 
 <!-- nateja -->
    <script>
@@ -153,6 +156,14 @@ pageEncoding="UTF-8"%>
 
             </c:choose>
 
+            <c:if test="${sessionScope.user != null && sessionScope.user.admin == 1}">
+                <button id="createPostBtn"
+                        class="w3-button w3-theme w3-circle w3-xxlarge"
+                        onclick="createPost()"
+                        style="position: fixed; bottom: 30px; right: 30px;">
+                    +
+                </button>
+            </c:if>
         </div>
 
     </div>
@@ -206,6 +217,10 @@ pageEncoding="UTF-8"%>
             });
 
             paintRating();
+        }
+
+        function createPost() {
+            alert("Encara no està implementat 😄\nAquí podràs crear nous Eventos.");
         }
 
         function setRating(value) {
