@@ -3,6 +3,8 @@ package epaw.lab3.repository;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import epaw.lab3.model.User;
@@ -21,6 +23,41 @@ public class UserRepository extends BaseRepository {
         }
         return instance;
     }
+    
+    public List<User> findAll() {
+
+        List<User> users = new ArrayList<>();
+
+        String query = "SELECT * FROM users";
+
+        try (PreparedStatement statement = db.prepareStatement(query);
+            ResultSet rs = statement.executeQuery()) {
+
+            while (rs.next()) {
+
+                User user = new User();
+
+                user.setId(rs.getInt("id"));
+                user.setName(rs.getString("name"));
+                user.setUsername(rs.getString("username"));
+                user.setEmail(rs.getString("email"));
+                user.setLocation(rs.getString("location"));
+                user.setUserType(rs.getString("userType"));
+                user.setColla(rs.getString("colla"));
+                user.setPicture(rs.getString("picture"));
+                user.setPosicions(rs.getString("posicions"));
+                user.setAdmin(rs.getInt("admin"));
+
+                users.add(user);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return users;
+    }
+
 
     public boolean existsByUsername(String username) {
         String query = "SELECT COUNT(*) FROM users WHERE username = ?";
