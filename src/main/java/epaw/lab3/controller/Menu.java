@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
+import epaw.lab3.model.User;
+
 /**
  * Servlet implementation class Menu
  */
@@ -18,14 +20,21 @@ public class Menu extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+			HttpSession session = request.getSession(false);
+			String view = "MenuNotLogged.html";
 
-		HttpSession session = request.getSession(false);
-		String view = "MenuNotLogged.html";
+			if (session != null && session.getAttribute("user") != null) {
 
-		if (session != null && session.getAttribute("user") != null)
-			view = "MenuLogged.html";
+				User user = (User) session.getAttribute("user");
 
-		request.getRequestDispatcher(view).forward(request, response);
+				if (user.getAdmin() == 1) {
+					view = "MenuAdmin.html";
+				} else {
+					view = "MenuLogged.html";
+				}
+			}
+
+			request.getRequestDispatcher(view).forward(request, response);
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)

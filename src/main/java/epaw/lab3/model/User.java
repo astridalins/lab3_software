@@ -18,6 +18,9 @@ public class User implements Serializable {
 	private String userType;
 	private String email;
 	private String posicions;
+	private int admin;
+
+
 
 	public User() {
 		super();
@@ -53,6 +56,13 @@ public class User implements Serializable {
 
 	public void setPicture(String picture) {
 		this.picture = picture;
+	}
+		public int getAdmin() {
+		return admin;
+	}
+
+	public void setAdmin(int admin) {
+		this.admin = admin;
 	}
 
 	//COLLA CASTELLERA

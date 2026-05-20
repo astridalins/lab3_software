@@ -69,6 +69,7 @@ public class UserRepository extends BaseRepository {
                     user.setUserType(rs.getString("userType"));
                     user.setEmail(rs.getString("email"));
                     user.setPosicions(rs.getString("posicions"));
+                    user.setAdmin(rs.getInt("admin"));
                     return true;
                 }
             }

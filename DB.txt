@@ -8,6 +8,6 @@ CREATE TABLE users (
   userType VARCHAR(20) NOT NULL,
   email VARCHAR(100) NOT NULL,
   posicions VARCHAR(100),
-  picture VARCHAR(255)
-
+  picture VARCHAR(255),
+  admin INTEGER NOT NULL DEFAULT 0 CHECK(admin IN (0,1))
 );
