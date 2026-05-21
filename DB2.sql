@@ -9,7 +9,8 @@ USE casteller_social;
 -- =========================
 CREATE TABLE colla (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL
+    name VARCHAR(100) NOT NULL,
+    FOREIGN KEY (id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- =========================
@@ -32,9 +33,6 @@ CREATE TABLE users (
 
     colla_id INT,
 
-    FOREIGN KEY (colla_id)
-        REFERENCES colla(id)
-        ON DELETE SET NULL
 );
 
 -- =========================
@@ -47,6 +45,7 @@ CREATE TABLE admin (
     FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE
+
 );
 
 -- =========================
@@ -54,23 +53,34 @@ CREATE TABLE admin (
 -- =========================
 CREATE TABLE post (
     id INT AUTO_INCREMENT PRIMARY KEY,
-
     user_id INT NOT NULL,
-    parent_id INT NULL,
 
-    type VARCHAR(20),
+    parent_id INT NULL, --reaccions a otros posts
+    diada_id INT, --quina diada es
+    colla_id INT, --quina colla es
+    private BOOLEAN,
+
     text VARCHAR(500),
     image_path VARCHAR(500),
-
     created_at DATE,
+   
 
     FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE,
 
+    FOREIGN KEY (diada_id)
+        REFERENCES diada(id)
+        ON DELETE CASCADE,
+
     FOREIGN KEY (parent_id)
         REFERENCES post(id)
+        ON DELETE CASCADE,
+        
+    FOREIGN KEY (colla_id)
+        REFERENCES colla(id)
         ON DELETE CASCADE
+    
 );
 
 -- =========================
@@ -135,6 +145,7 @@ CREATE TABLE review (
 
     value INT,
     comment VARCHAR(255),
+    espectador BOOLEAN NOT NULL,
 
     created_at DATE,
 

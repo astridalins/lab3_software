@@ -1,6 +1,7 @@
 <%-- solució dels accents --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
+<div style="background-image: url('assets/castellers_colors.jpg'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100vh; margin: -50px -9999px; padding: 50px 9999px 24px;">
 <div class="w3-col m12">
 
     <div class="w3-card w3-white w3-padding main-feed">
@@ -116,5 +117,4 @@ function createPost() {
 }
 
 </script>
-
-
+</div>
