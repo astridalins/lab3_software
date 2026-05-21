@@ -1,5 +1,4 @@
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/Content.java
-/Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/DeleteUser.java
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/Eventos.java
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/Info.java
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/Login.java
@@ -8,6 +7,7 @@
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/Menu.java
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/Profile.java
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/Register.java
+/Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/UsersManagement.java
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/controller/UsersSearch.java
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/model/User.java
 /Users/Bisbe/Documents/GitHub/lab3_software/src/main/java/epaw/lab3/repository/BaseRepository.java
