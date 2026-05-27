@@ -59,6 +59,39 @@
 					$("#content").html(html);
 				});
 			});
+
+			/* Follow user */
+			$(document).on("click", ".followUser", function (event) {
+				event.preventDefault();
+				$.post("Follow", { id: $(this).closest("[id]").attr("id") }, function () {
+					$("#content").load("UsersSearch");
+				});
+			});
+
+			/* Unfollow user */
+			$(document).on("click", ".unfollowUser", function (event) {
+				event.preventDefault();
+				$.post("Unfollow", { id: $(this).closest("[id]").attr("id") }, function () {
+					$("#content").load("UsersSearch");
+				});
+			});
+
+			/* Add post */
+			$(document).on("click", "#addPost", function (event) {
+				event.preventDefault();
+				$.post("AddPost", { content: $("#postContent").text() }, function () {
+					$("#postContent").text("");
+					$("#iterator").load("Posts");
+				});
+			});
+
+			/* Delete post */
+			$(document).on("click", ".delPost", function (event) {
+				event.preventDefault();
+				$.post("DelPost", { id: $(this).parent().attr("id") }, function () {
+					$("#iterator").load("Posts");
+				});
+			});
 		};
 
 		App.stack = function () {
