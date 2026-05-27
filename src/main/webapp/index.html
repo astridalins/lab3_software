@@ -33,20 +33,21 @@
 
 		App.bindEvents = function () {
 
-			// Deal with menu clicks
+			// Menu clicks — clear columns on every navigation
 			$(document).on("click", ".menu", function (event) {
 				event.preventDefault();
+				$('#lcolumn').html('');
+				$('#rcolumn').html('');
 				$('#content').load($(this).attr('href'), function () {
 					$('#navigation').load("Menu");
 				});
 			});
 
-			// Deal with form submission via AJAX
+			// Form submission via AJAX (Register, Login, Profile edit…)
 			$(document).on("submit", "form", function (event) {
 				event.preventDefault();
 				const form = this;
 				const data = new FormData(form);
-
 				$.ajax({
 					type: 'POST',
 					enctype: 'multipart/form-data',
@@ -60,7 +61,7 @@
 				});
 			});
 
-			/* Follow user */
+			/* Follow user (UsersSearch) */
 			$(document).on("click", ".followUser", function (event) {
 				event.preventDefault();
 				$.post("Follow", { id: $(this).closest("[id]").attr("id") }, function () {
@@ -68,7 +69,7 @@
 				});
 			});
 
-			/* Unfollow user */
+			/* Unfollow user (UsersSearch) */
 			$(document).on("click", ".unfollowUser", function (event) {
 				event.preventDefault();
 				$.post("Unfollow", { id: $(this).closest("[id]").attr("id") }, function () {
@@ -76,20 +77,38 @@
 				});
 			});
 
-			/* Add post */
-			$(document).on("click", "#addPost", function (event) {
+			/* Submit post from any forum tab (MainPage) */
+			$(document).on("click", ".submitPost", function (event) {
 				event.preventDefault();
-				$.post("AddPost", { content: $("#postContent").text() }, function () {
-					$("#postContent").text("");
-					$("#iterator").load("Posts");
+				const btn    = $(this);
+				const txId   = btn.data("textarea");
+				const content = $("#" + txId).val().trim();
+				if (!content) return;
+				const vis = btn.data("visibility");
+				$.post("AddPost", { content: content, visibility: vis }, function () {
+					$("#content").load("MainPage");
 				});
 			});
 
-			/* Delete post */
+			/* Delete post (MainPage) */
 			$(document).on("click", ".delPost", function (event) {
 				event.preventDefault();
-				$.post("DelPost", { id: $(this).parent().attr("id") }, function () {
-					$("#iterator").load("Posts");
+				$.post("DelPost", { id: $(this).closest("[id]").attr("id") }, function () {
+					$("#content").load("MainPage");
+				});
+			});
+
+			/* Like / Unlike toggle (MainPage) */
+			$(document).on("click", ".likeToggle", function (event) {
+				event.preventDefault();
+				const btn    = $(this);
+				const postId = btn.closest("[id]").attr("id");
+				const liked  = btn.attr("data-liked") === "1";
+				const url    = liked ? "UnlikePost" : "LikePost";
+				$.post(url, { id: postId }, function (newCount) {
+					btn.find(".likeCount").text(newCount);
+					btn.attr("data-liked", liked ? "0" : "1");
+					btn.toggleClass("w3-blue w3-light-grey");
 				});
 			});
 		};

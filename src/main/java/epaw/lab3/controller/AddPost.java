@@ -26,15 +26,22 @@ public class AddPost extends HttpServlet {
             if (user != null) {
                 String content = request.getParameter("content");
                 if (content != null && !content.trim().isEmpty()) {
+                    int visibility = 0; // default: tots
+                    try {
+                        visibility = Integer.parseInt(request.getParameter("visibility"));
+                    } catch (Exception ignored) {}
+
                     Post post = new Post();
                     post.setUid(user.getId());
                     post.setUname(user.getName());
                     post.setContent(content.trim());
+                    post.setVisibility(visibility);
                     post.setPostDateTime(new Timestamp(System.currentTimeMillis()));
                     PostService.getInstance().add(post);
                 }
             }
         }
+        // No response body — AJAX caller will reload MainPage
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)

@@ -11,25 +11,47 @@ public class PostService {
     private static PostService instance;
     private PostRepository postRepository;
 
-    private PostService() {
-        this.postRepository = PostRepository.getInstance();
-    }
+    private PostService() { this.postRepository = PostRepository.getInstance(); }
 
     public static synchronized PostService getInstance() {
-        if (instance == null) {
-            instance = new PostService();
-        }
+        if (instance == null) instance = new PostService();
         return instance;
     }
 
+    // ── add ───────────────────────────────────────────────────────────────────
     public void add(Post post) {
         postRepository.save(post);
     }
 
+    // ── delete ────────────────────────────────────────────────────────────────
     public void delete(Integer id, Integer userId) {
         postRepository.delete(id, userId);
     }
 
+    // ── forum posts ───────────────────────────────────────────────────────────
+    public List<Post> getPrivatPosts(Integer userId) {
+        return postRepository.findPrivat(userId);
+    }
+
+    public List<Post> getCollaPosts(String colla, Integer userId) {
+        if (colla == null || colla.isBlank()) return List.of();
+        return postRepository.findColla(colla, userId);
+    }
+
+    public List<Post> getTotsPosts(Integer userId) {
+        return postRepository.findTots(userId);
+    }
+
+    // ── likes ─────────────────────────────────────────────────────────────────
+    public int like(Integer userId, Integer postId) {
+        return postRepository.addLike(userId, postId);
+    }
+
+    public int unlike(Integer userId, Integer postId) {
+        return postRepository.removeLike(userId, postId);
+    }
+
+    // ── legacy (Timeline/Posts tab) ───────────────────────────────────────────
     public List<Post> getPostsByUser(Integer userId, Integer start, Integer end) {
         Optional<List<Post>> posts = postRepository.findByUser(userId, start, end);
         return posts.orElse(null);
