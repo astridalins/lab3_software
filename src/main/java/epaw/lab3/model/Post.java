@@ -13,8 +13,10 @@ public class Post implements java.io.Serializable {
     private Timestamp postDateTime; // maps to post.created_at
     private String content;    // maps to post.text
     private int visibility;    // maps to post.private  (0=tots, 1=privat, 2=colla)
+    private String collaName;  // maps to post.colla_name (only set when visibility=2)
     private int likeCount;     // computed: COUNT(likes)
     private int likedByMe;     // computed: 1 if current user liked, 0 otherwise
+    private String imagePath;  // maps to post.image_path (optional)
 
     public Post() {}
 
@@ -39,9 +41,15 @@ public class Post implements java.io.Serializable {
     public int getVisibility() { return this.visibility; }
     public void setVisibility(int visibility) { this.visibility = visibility; }
 
+    public String getCollaName() { return this.collaName; }
+    public void setCollaName(String collaName) { this.collaName = collaName; }
+
     public int getLikeCount() { return this.likeCount; }
     public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
 
     public int getLikedByMe() { return this.likedByMe; }
     public void setLikedByMe(int likedByMe) { this.likedByMe = likedByMe; }
+
+    public String getImagePath() { return this.imagePath; }
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
 }

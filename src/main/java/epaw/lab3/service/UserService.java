@@ -170,6 +170,43 @@ public class UserService {
         return userRepository.findNotFollowed(userId, start, end).orElse(null);
     }
 
+    // ─── updateProfile ───────────────────────────────────────────────────────
+    public Map<String, String> updateProfile(User updated, User current) {
+        Map<String, String> errors = new HashMap<>();
+
+        String name = updated.getName();
+        if (name == null || name.trim().isEmpty())
+            errors.put("name", "El nom no pot estar buit.");
+        else if (name.length() < 5 || name.length() > 20)
+            errors.put("name", "El nom ha de tenir entre 5 i 20 caràcters.");
+
+        String location = updated.getLocation();
+        if (location == null || location.trim().isEmpty())
+            errors.put("location", "La localitat no pot estar buida.");
+        else if (!location.matches("[a-zA-ZÀ-ÿ\\s]+"))
+            errors.put("location", "La localitat només pot contenir lletres.");
+
+        String email = updated.getEmail();
+        if (email == null || email.trim().isEmpty())
+            errors.put("email", "L'email no pot estar buit.");
+        else if (!email.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"))
+            errors.put("email", "El format de l'email no és vàlid.");
+        else if (!email.equals(current.getEmail()) && userRepository.existsByEmailExcluding(email, current.getId()))
+            errors.put("email", "Aquest email ja està registrat per un altre usuari.");
+
+        if ("CASTELLER".equals(current.getUserType())) {
+            String colla = updated.getColla();
+            if (colla != null && !colla.trim().isEmpty() && !userRepository.collaExists(colla))
+                errors.put("colla", "Has de seleccionar una colla vàlida de la llista.");
+        }
+
+        if (errors.isEmpty()) {
+            updated.setId(current.getId());
+            userRepository.update(updated);
+        }
+        return errors;
+    }
+
     // ─── saveProfilePicture ───────────────────────────────────────────────────
     public String saveProfilePicture(Part filePart, String username) {
         if (filePart == null || filePart.getSize() <= 0) {

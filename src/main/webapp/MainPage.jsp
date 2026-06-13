@@ -29,10 +29,6 @@ function showTab(name) {
             min-height: 100vh; margin: -50px -9999px; padding: 50px 9999px 24px;">
 <div class="w3-container w3-padding">
 
-    <h2 class="w3-text-white" style="text-shadow:1px 1px 4px #000">
-        <i class="fa fa-newspaper-o"></i> Forums
-    </h2>
-
     <!-- ── TAB BUTTONS ────────────────────────────────────────────────────── -->
     <div class="w3-bar w3-card w3-white w3-round w3-margin-bottom">
         <button id="btn-privat" class="tab-btn w3-bar-item w3-button w3-theme w3-round"
@@ -54,10 +50,17 @@ function showTab(name) {
 
     <%-- ══════════════════════ TAB PRIVAT ══════════════════════ --%>
     <div id="tab-privat">
-        <div class="w3-card w3-white w3-padding w3-round w3-margin-bottom">
+        <div class="w3-card w3-white w3-padding w3-round w3-margin-bottom post-creator">
             <p class="w3-opacity"><i class="fa fa-lock"></i> Només tu pots veure aquests posts.</p>
             <textarea id="txt-privat" class="w3-input w3-border w3-round" rows="3"
                       placeholder="Escriu un post privat..."></textarea>
+            <div style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                <label class="w3-button w3-light-grey w3-round" style="cursor:pointer; font-weight:500; margin:0">
+                    <i class="fa fa-image"></i> Afegir imatge
+                    <input type="file" class="postImage" accept="image/*" style="display:none">
+                </label>
+                <span class="imageFileName w3-small w3-text-grey" style="font-style:italic"></span>
+            </div>
             <button class="submitPost w3-button w3-theme w3-round w3-margin-top"
                     data-visibility="1" data-textarea="txt-privat">
                 <i class="fa fa-send"></i> Publicar
@@ -77,6 +80,10 @@ function showTab(name) {
                         <strong>${p.uname}</strong><br>
                         <hr class="w3-clear">
                         <p>${p.content}</p>
+                        <c:if test="${not empty p.imagePath}">
+                            <img src="${p.imagePath}" alt="imatge del post"
+                                 style="max-width:100%; border-radius:10px; margin-bottom:8px; display:block">
+                        </c:if>
                         <button type="button" class="likeToggle w3-button w3-round w3-small ${p.likedByMe == 1 ? 'w3-blue' : 'w3-light-grey'}"
                                 data-liked="${p.likedByMe}">
                             <i class="fa fa-thumbs-up"></i> <span class="likeCount">${p.likeCount}</span>
@@ -94,13 +101,20 @@ function showTab(name) {
 
     <%-- ══════════════════════ TAB COLLA ══════════════════════ --%>
     <div id="tab-colla" style="display:none">
-        <div class="w3-card w3-white w3-padding w3-round w3-margin-bottom">
+        <div class="w3-card w3-white w3-padding w3-round w3-margin-bottom post-creator">
             <p class="w3-opacity"><i class="fa fa-users"></i>
                 Fòrum intern de <strong>${sessionScope.user.colla}</strong>.
                 Només el veuen els integrants castellers de la colla.
             </p>
             <textarea id="txt-colla" class="w3-input w3-border w3-round" rows="3"
                       placeholder="Escriu un missatge per a la colla..."></textarea>
+            <div style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                <label class="w3-button w3-light-grey w3-round" style="cursor:pointer; font-weight:500; margin:0">
+                    <i class="fa fa-image"></i> Afegir imatge
+                    <input type="file" class="postImage" accept="image/*" style="display:none">
+                </label>
+                <span class="imageFileName w3-small w3-text-grey" style="font-style:italic"></span>
+            </div>
             <button class="submitPost w3-button w3-theme w3-round w3-margin-top"
                     data-visibility="2" data-textarea="txt-colla">
                 <i class="fa fa-send"></i> Publicar
@@ -120,6 +134,10 @@ function showTab(name) {
                         <strong>${p.uname}</strong><br>
                         <hr class="w3-clear">
                         <p>${p.content}</p>
+                        <c:if test="${not empty p.imagePath}">
+                            <img src="${p.imagePath}" alt="imatge del post"
+                                 style="max-width:100%; border-radius:10px; margin-bottom:8px; display:block">
+                        </c:if>
                         <button type="button" class="likeToggle w3-button w3-round w3-small ${p.likedByMe == 1 ? 'w3-blue' : 'w3-light-grey'}"
                                 data-liked="${p.likedByMe}">
                             <i class="fa fa-thumbs-up"></i> <span class="likeCount">${p.likeCount}</span>
@@ -137,10 +155,17 @@ function showTab(name) {
 
     <%-- ══════════════════════ TAB TOTS ══════════════════════ --%>
     <div id="tab-tots" style="display:none">
-        <div class="w3-card w3-white w3-padding w3-round w3-margin-bottom">
+        <div class="w3-card w3-white w3-padding w3-round w3-margin-bottom post-creator">
             <p class="w3-opacity"><i class="fa fa-globe"></i> Visible per a tots els usuaris.</p>
             <textarea id="txt-tots" class="w3-input w3-border w3-round" rows="3"
                       placeholder="Escriu un post públic..."></textarea>
+            <div style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                <label class="w3-button w3-light-grey w3-round" style="cursor:pointer; font-weight:500; margin:0">
+                    <i class="fa fa-image"></i> Afegir imatge
+                    <input type="file" class="postImage" accept="image/*" style="display:none">
+                </label>
+                <span class="imageFileName w3-small w3-text-grey" style="font-style:italic"></span>
+            </div>
             <button class="submitPost w3-button w3-theme w3-round w3-margin-top"
                     data-visibility="0" data-textarea="txt-tots">
                 <i class="fa fa-send"></i> Publicar
@@ -160,6 +185,10 @@ function showTab(name) {
                         <strong>${p.uname}</strong><br>
                         <hr class="w3-clear">
                         <p>${p.content}</p>
+                        <c:if test="${not empty p.imagePath}">
+                            <img src="${p.imagePath}" alt="imatge del post"
+                                 style="max-width:100%; border-radius:10px; margin-bottom:8px; display:block">
+                        </c:if>
                         <button type="button" class="likeToggle w3-button w3-round w3-small ${p.likedByMe == 1 ? 'w3-blue' : 'w3-light-grey'}"
                                 data-liked="${p.likedByMe}">
                             <i class="fa fa-thumbs-up"></i> <span class="likeCount">${p.likeCount}</span>

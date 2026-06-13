@@ -247,6 +247,70 @@ public class UserRepository extends BaseRepository {
         return Optional.empty();
     }
 
+    // ── update ────────────────────────────────────────────────────────────────
+    public void update(User user) {
+        String query = "UPDATE users SET name=?, email=?, location=?, colla=?, posicions=? WHERE id=?";
+        try (PreparedStatement st = db.prepareStatement(query)) {
+            st.setString(1, user.getName());
+            st.setString(2, user.getEmail());
+            st.setString(3, user.getLocation());
+            st.setString(4, user.getColla());
+            st.setString(5, user.getPosicions());
+            st.setInt(6, user.getId());
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ── isFollowing ───────────────────────────────────────────────────────────
+    public boolean isFollowing(Integer followerId, Integer followedId) {
+        String query = "SELECT COUNT(*) FROM follows WHERE follower_id = ? AND followed_id = ?";
+        try (PreparedStatement st = db.prepareStatement(query)) {
+            st.setInt(1, followerId);
+            st.setInt(2, followedId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // ── findFullById ──────────────────────────────────────────────────────────
+    public Optional<User> findFullById(Integer id) {
+        String query =
+            "SELECT u.id, u.name, u.username, u.email, u.location, u.userType, " +
+            "       u.colla, u.picture, u.posicions, " +
+            "       CASE WHEN a.user_id IS NOT NULL THEN 1 ELSE 0 END AS isAdmin " +
+            "FROM users u LEFT JOIN admin a ON a.user_id = u.id " +
+            "WHERE u.id = ?";
+        try (PreparedStatement st = db.prepareStatement(query)) {
+            st.setInt(1, id);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) return Optional.of(mapUser(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return Optional.empty();
+    }
+
+    // ── existsByEmailExcluding ────────────────────────────────────────────────
+    public boolean existsByEmailExcluding(String email, Integer userId) {
+        String query = "SELECT COUNT(*) FROM users WHERE email = ? AND id != ?";
+        try (PreparedStatement st = db.prepareStatement(query)) {
+            st.setString(1, email);
+            st.setInt(2, userId);
+            ResultSet rs = st.executeQuery();
+            if (rs.next()) return rs.getInt(1) > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     // ── collaExists ───────────────────────────────────────────────────────────
     public boolean collaExists(String colla) {
         List<String> collesValides = List.of(

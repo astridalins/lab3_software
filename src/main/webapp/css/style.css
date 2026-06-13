@@ -59,9 +59,9 @@ body {
     font-weight: 500;
 }
 
-.w3-bar .w3-button:hover {
-    background: rgba(127,29,29,0.12) !important;
-    color: var(--primary) !important;
+.w3-bar .w3-button:hover:not(.w3-white) {
+    background: rgba(255,255,255,0.22) !important;
+    color: white !important;
 }
 
 /* =======================================================

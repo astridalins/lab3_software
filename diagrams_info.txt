@@ -1,0 +1,837 @@
+================================================================================
+  CASTELLERS PLATFORM — INFORMACIÓ COMPLETA PER A DIAGRAMES
+  Projecte: Lab 3 EPAW · Universitat Pompeu Fabra · 2026
+  Autora: Astrid Alins Moragón
+================================================================================
+
+
+════════════════════════════════════════════════════════════════════════════════
+  1. SEQUENCE DIAGRAMS
+════════════════════════════════════════════════════════════════════════════════
+
+  ACTORS/PARTICIPANTS QUE APAREIXEN ALS DIAGRAMES
+  ─────────────────────────────────────────────────
+  - Browser (client, executa jQuery/AJAX)
+  - index.html (SPA shell, gestiona events globalment)
+  - Servlet (Java HttpServlet @WebServlet)
+  - Service (capa de lògica de negoci, Singleton)
+  - Repository (accés a base de dades, Singleton)
+  - SQLite DB (fitxer lab3.db)
+  - HttpSession (sessió del servidor, 1 hora)
+
+
+  ── SD-1: LOGIN ──────────────────────────────────────────────────────────────
+
+  Browser → index.html       : carrega Login.jsp (GET /Login)
+  Browser → Login Servlet    : POST /Login {username, password}
+  Login Servlet → UserService: login(User)
+  UserService → UserRepository: checkLogin(User)
+  UserRepository → SQLite DB : SELECT amb JOIN users + admin WHERE username=? AND password=?
+  SQLite DB → UserRepository : ResultSet (id, name, userType, isAdmin, colla, posicions, picture, ...)
+  UserRepository → UserService: true / false
+  UserService → Login Servlet: errors map (buit si OK)
+  Login Servlet → HttpSession: session.setAttribute("user", user) [si OK]
+  Login Servlet → Browser    : Welcome.jsp (si OK) o Login.jsp amb errors (si KO)
+
+  Notes: La sessió té maxInactiveInterval de 3600s (1 hora).
+         El flag isAdmin es calcula amb LEFT JOIN admin a ON a.user_id = u.id.
+
+
+  ── SD-2: REGISTER ───────────────────────────────────────────────────────────
+
+  Browser → Register Servlet : POST /Register (multipart/form-data) {name, username,
+                                password, email, location, userType, posicions,
+                                colla, picture (fitxer)}
+  Register Servlet → UserService: saveProfilePicture(Part, username)
+  UserService → FileSystem   : crea directori EXTERNAL_RESOURCES, copia fitxer
+  Register Servlet → UserService: register(User)
+  UserService → UserService  : validate(User) [comprova nom, username, email,
+                                password (regex), posicions, colla]
+  UserService → UserRepository: existsByUsername(username) [si ja existeix → error]
+  UserService → UserRepository: existsByEmail(email) [si ja existeix → error]
+  UserService → UserRepository: collaExists(colla) [si CASTELLER]
+  UserRepository → SQLite DB : comprovacions
+  UserRepository → UserService: booleans
+  UserService → Login Servlet: errors map (buit si OK)
+  [si errors buits]
+  UserService → UserRepository: save(User)
+  UserRepository → SQLite DB : INSERT INTO users (...)
+  Register Servlet → Browser : Login.jsp (si OK) o Register.jsp amb errors (si KO)
+
+
+  ── SD-3: PUBLICAR UN POST (AJAX) ────────────────────────────────────────────
+
+  Browser (MainPage) → index.html  : click en .submitPost
+  index.html → index.html          : llegeix data-visibility i data-textarea
+  index.html → AddPost Servlet     : $.post("AddPost", {content, visibility})
+  AddPost Servlet → HttpSession    : getAttribute("user")
+  AddPost Servlet → PostService    : add(Post)  [Post té uid, content, visibility,
+                                                 timestamp, collaName si visibility=2]
+  PostService → PostRepository     : save(Post)
+  PostRepository → SQLite DB       : INSERT INTO post (user_id, created_at, text,
+                                      private, colla_name) VALUES (?,?,?,?,?)
+                                      [created_at = SimpleDateFormat "yyyy-MM-dd HH:mm:ss"]
+  SQLite DB → PostRepository       : OK
+  index.html → MainPage Servlet    : $("#content").load("MainPage")
+  MainPage Servlet → PostService   : getPrivatPosts, getTotsPosts, [getCollaPosts]
+  PostService → PostRepository     : findPrivat(userId), findTots(userId), findColla(colla,userId)
+  PostRepository → SQLite DB       : SELECT amb subqueries likeCount, likedByMe
+  SQLite DB → PostRepository       : ResultSet posts
+  MainPage Servlet → Browser       : MainPage.jsp renderitzat amb posts actualitzats
+
+
+  ── SD-4: LIKE/UNLIKE (AJAX) ─────────────────────────────────────────────────
+
+  Browser (MainPage) → index.html  : click en .likeToggle
+  index.html → index.html          : llegeix data-liked, postId = closest("[id]")
+  [si liked=0]
+  index.html → LikePost Servlet    : $.post("LikePost", {id: postId})
+  LikePost Servlet → PostService   : like(userId, postId)
+  PostService → PostRepository     : addLike(userId, postId)
+  PostRepository → SQLite DB       : INSERT OR IGNORE INTO likes (user_id, post_id)
+  PostRepository → SQLite DB       : SELECT COUNT(*) FROM likes WHERE post_id=?
+  PostRepository → LikePost Servlet: newCount (int)
+  LikePost Servlet → Browser       : plain text "3" (nou nombre de likes)
+  index.html → DOM                 : actualitza .likeCount, toggle classes w3-blue/w3-light-grey,
+                                     actualitza data-liked
+
+  [si liked=1 → $.post("UnlikePost") → DELETE FROM likes → retorna newCount]
+
+
+  ── SD-5: FOLLOW/UNFOLLOW (AJAX) ─────────────────────────────────────────────
+
+  Browser (UsersSearch) → index.html  : click en .followUser
+  index.html → Follow Servlet         : $.post("Follow", {id: targetUserId})
+                                        [targetUserId = $(this).closest("[id]").attr("id")]
+  Follow Servlet → HttpSession        : getAttribute("user")
+  Follow Servlet → UserService        : follow(followerId, targetId)
+  UserService → UserRepository        : followUser(followerId, followedId)
+  UserRepository → SQLite DB          : INSERT INTO follows (follower_id, followed_id)
+  SQLite DB → UserRepository          : OK
+  index.html → UsersSearch Servlet    : $("#content").load("UsersSearch")
+  UsersSearch Servlet → UserService   : getFollowedUsers(userId, 0, 100)
+  UsersSearch Servlet → UserService   : getNotFollowedUsers(userId, 0, 100)
+  UserService → UserRepository        : findFollowed + findNotFollowed
+  UserRepository → SQLite DB          : SELECT amb JOIN follows
+  UsersSearch Servlet → Browser       : UsersSearch.jsp renderitzat (llistes actualitzades)
+
+  [Unfollow és igual però DELETE FROM follows]
+
+
+  ── SD-6: EDITAR PERFIL (AJAX) ───────────────────────────────────────────────
+
+  Browser (Profile) → index.html    : click en .saveProfile
+  index.html → UpdateProfile Servlet: $.ajax POST "UpdateProfile"
+                                       data: $("#editProfileForm").serialize()
+                                       [url-encoded, NO multipart]
+                                       params: name, email, location, colla, posicions[]
+  UpdateProfile Servlet → HttpSession: getAttribute("user") [current user]
+  UpdateProfile Servlet → UserService: updateProfile(updated, current)
+  UserService → UserService          : validació (nom 5-20 chars, email format,
+                                        location lletres, colla vàlida, posicions vàlides)
+  UserService → UserRepository       : existsByEmailExcluding(email, currentId)
+                                        [comprova email únic si ha canviat]
+  [si errors]
+  UpdateProfile Servlet → Browser    : HTTP 400 + JSON {"nom":"error",...}
+  index.html → DOM                   : mostra errors en spans #err-name, #err-email, etc.
+
+  [si OK]
+  UserService → UserRepository       : update(User)
+  UserRepository → SQLite DB         : UPDATE users SET name=?,email=?,location=?,colla=?,
+                                        posicions=? WHERE id=?
+  UpdateProfile Servlet → HttpSession: actualitza atributs de la sessió (name, email,
+                                        location, colla, posicions)
+  UpdateProfile Servlet → Browser    : HTTP 200 "ok"
+  index.html → Profile Servlet       : $("#content").load("Profile")
+  Profile Servlet → PostService      : getPublicPostsByUser + getPrivatPostsByUser
+  Profile Servlet → Browser          : Profile.jsp actualitzat
+
+
+  ── SD-7: VEURE PERFIL D'ALTRE USUARI ────────────────────────────────────────
+
+  Browser (UsersSearch) → index.html      : click en .viewProfile
+  index.html → ViewUserProfile Servlet    : $.load("ViewUserProfile?uid=" + uid)
+  ViewUserProfile Servlet → UserRepository: findFullById(targetId)
+  UserRepository → SQLite DB              : SELECT amb LEFT JOIN admin WHERE id=?
+  ViewUserProfile Servlet → UserRepository: isFollowing(viewerId, targetId)
+  UserRepository → SQLite DB              : SELECT COUNT(*) FROM follows
+                                             WHERE follower_id=? AND followed_id=?
+  ViewUserProfile Servlet → PostService   : getPublicPostsByUser(targetId, viewerId)
+  [si isFollowing=true]
+  ViewUserProfile Servlet → PostService   : getPrivatPostsByUser(targetId, viewerId)
+  ViewUserProfile Servlet → Browser       : UserProfile.jsp
+                                            [si isFollowing=false → mostra missatge
+                                             "Encara no segueixes a aquesta persona"
+                                             a la pestanya Privat]
+
+
+  ── SD-8: LOGOUT ─────────────────────────────────────────────────────────────
+
+  Browser → index.html    : click menú "Logout"
+  index.html → Logout Servlet: GET/POST /Logout
+  Logout Servlet → HttpSession: session.invalidate()
+  Logout Servlet → Browser   : redirecció a Content (pàgina inicial)
+
+
+════════════════════════════════════════════════════════════════════════════════
+  2. USE CASE DIAGRAM
+════════════════════════════════════════════════════════════════════════════════
+
+  ACTORS
+  ──────
+  1. ANONYMOUS  — Usuari no autenticat (no té sessió activa)
+  2. REGISTERED — Usuari registrat autenticat (CASTELLER o ESPECTADOR)
+     └─ CASTELLER — Subtipus: pertany a una colla castellera
+     └─ ESPECTADOR — Subtipus: espectador sense colla
+  3. ADMIN      — Administrador (hereta de REGISTERED + capacitats addicionals)
+
+  HIERARCHY:
+  ANONYMOUS ──extends──▶ REGISTERED ──extends──▶ ADMIN
+
+
+  USE CASES PER ACTOR
+  ─────────────────────
+
+  ANONYMOUS:
+  - UC-01: Registrar-se (GET/POST /Register)
+  - UC-02: Iniciar sessió (GET/POST /Login)
+  - UC-03: Veure timeline global de posts públics (GET /MainPage) [pendent impl.]
+  - UC-04: Veure pàgina pública d'un usuari [pendent impl.]
+
+  REGISTERED (inclou tot d'ANONYMOUS excepte UC-01 i UC-02):
+  - UC-05: Tancar sessió (GET /Logout)
+  - UC-06: Veure fòrum Tots (posts visibility=0)
+  - UC-07: Veure fòrum Privat (posts visibility=1, propis + seguits)
+  - UC-08: Publicar post (visibility 0, 1 o 2)
+  - UC-09: Eliminar post propi
+  - UC-10: Fer like/unlike a un post
+  - UC-11: Veure i editar el seu perfil (/Profile)
+  - UC-12: Buscar i trobar usuaris (/UsersSearch)
+  - UC-13: Seguir un usuari (/Follow)
+  - UC-14: Deixar de seguir un usuari (/Unfollow)
+  - UC-15: Veure perfil públic d'un altre usuari (/ViewUserProfile)
+  - UC-16: Veure posts privats d'un usuari seguit (/ViewUserProfile + isFollowing=true)
+
+  CASTELLER (a més de REGISTERED):
+  - UC-17: Veure fòrum Colla (posts visibility=2, filtrats per colla_name)
+  - UC-18: Publicar post de colla (visibility=2, colla_name s'emmagatzema al post)
+
+  ADMIN (a més de REGISTERED):
+  - UC-19: Veure gestió d'usuaris (/UsersManagement)
+  - UC-20: Editar compte d'usuari aliè
+  - UC-21: Eliminar compte d'usuari aliè
+
+
+  RELACIONS ENTRE USE CASES
+  ──────────────────────────
+  UC-08 <<includes>> UC-05 [ha d'estar autenticat]
+  UC-07 <<includes>> UC-13 [per veure posts privats d'altri]
+  UC-16 <<extends>>  UC-15 [veure perfil + veure posts privats si seguides]
+  UC-18 <<extends>>  UC-08 [publicar post és base, colla afegeix visibilitat=2]
+  UC-20 <<extends>>  UC-19
+  UC-21 <<extends>>  UC-19
+
+
+════════════════════════════════════════════════════════════════════════════════
+  3. CLASS DIAGRAM + ENTITY-RELATION DIAGRAM
+════════════════════════════════════════════════════════════════════════════════
+
+  ── 3A. CLASS DIAGRAM ────────────────────────────────────────────────────────
+
+  PACKAGE: epaw.lab3.model
+  ─────────────────────────
+
+  CLASS User (implements Serializable)
+  ├── int id
+  ├── String name            (5-20 chars)
+  ├── String username        (min 4 chars, UNIQUE)
+  ├── String password        (regex: ≥8 chars, maj+min+digit+símbol)
+  ├── String email           (format email, UNIQUE)
+  ├── String location        (only letters)
+  ├── String userType        ("CASTELLER" | "ESPECTADOR")
+  ├── String posicions       (coma-separated: baixos,contraforts,enxaneta,...)
+  ├── String picture         (path relatiu: assets/nom.png)
+  ├── String colla           (nom colla castellera, only CASTELLER)
+  └── int isAdmin            (0 o 1)
+
+  CLASS Post (implements Serializable)
+  ├── int id
+  ├── int uid                (FK → users.id)
+  ├── String uname           (desnormalitzat, joins users.name)
+  ├── String userPicture     (desnormalitzat, joins users.picture)
+  ├── Timestamp postDateTime (maps post.created_at TEXT "yyyy-MM-dd HH:mm:ss")
+  ├── String content         (maps post.text, max 500)
+  ├── int visibility         (0=tots, 1=privat, 2=colla)
+  ├── String collaName       (maps post.colla_name, only if visibility=2)
+  ├── int likeCount          (computed: COUNT(*) FROM likes WHERE post_id=id)
+  └── int likedByMe          (computed: 1 si el viewer ha fet like, 0 si no)
+
+
+  PACKAGE: epaw.lab3.repository
+  ───────────────────────────────
+
+  ABSTRACT CLASS BaseRepository
+  └── protected Connection db  [connexió JDBC SQLite: jdbc:sqlite:lab3.db]
+
+  CLASS UserRepository (extends BaseRepository) [Singleton]
+  ├── +findAll() : List<User>
+  ├── +existsByUsername(String) : boolean
+  ├── +existsByEmail(String) : boolean
+  ├── +existsByEmailExcluding(String, Integer) : boolean
+  ├── +checkLogin(User) : boolean    [emplena User amb dades del DB si OK]
+  ├── +save(User) : void
+  ├── +findByName(String) : Optional<User>
+  ├── +findById(Integer) : Optional<User>  [només id,name,username,picture]
+  ├── +findFullById(Integer) : Optional<User>  [tots els camps + isAdmin]
+  ├── +update(User) : void           [UPDATE SET name,email,location,colla,posicions]
+  ├── +followUser(Integer, Integer) : void
+  ├── +unfollowUser(Integer, Integer) : void
+  ├── +isFollowing(Integer, Integer) : boolean
+  ├── +findFollowed(Integer, Integer, Integer) : Optional<List<User>>
+  ├── +findNotFollowed(Integer, Integer, Integer) : Optional<List<User>>
+  └── +collaExists(String) : boolean  [whitelist de 5 colles vàlides]
+
+  CLASS PostRepository (extends BaseRepository) [Singleton]
+  ├── +VISIBILITY_TOTS   = 0
+  ├── +VISIBILITY_PRIVAT = 1
+  ├── +VISIBILITY_COLLA  = 2
+  ├── +save(Post) : void
+  ├── +delete(Integer id, Integer userId) : void  [comprova propietat]
+  ├── +findPrivat(Integer userId) : List<Post>     [visibility=1, propis + seguits]
+  ├── +findColla(String colla, Integer userId) : List<Post>  [visibility=2 per colla_name]
+  ├── +findTots(Integer userId) : List<Post>       [visibility=0 tots]
+  ├── +findPublicByUser(Integer targetId, Integer viewerId) : List<Post>  [visibility=0 per user]
+  ├── +findPrivatByUser(Integer targetId, Integer viewerId) : List<Post>  [visibility=1 per user]
+  ├── +findByUser(Integer, Integer, Integer) : Optional<List<Post>>  [legacy paginat]
+  ├── +addLike(Integer userId, Integer postId) : int   [retorna nou count]
+  ├── +removeLike(Integer userId, Integer postId) : int
+  └── +getLikeCount(Integer postId) : int
+
+
+  PACKAGE: epaw.lab3.service
+  ───────────────────────────
+
+  CLASS UserService [Singleton]
+  ├── -UserRepository userRepository
+  ├── +validate(User) : Map<String,String>
+  ├── +register(User) : Map<String,String>
+  ├── +login(User) : Map<String,String>
+  ├── +updateProfile(User updated, User current) : Map<String,String>
+  ├── +getAllUsers() : List<User>
+  ├── +follow(Integer followerId, Integer followedId) : void
+  ├── +unfollow(Integer followerId, Integer followedId) : void
+  ├── +getFollowedUsers(Integer, Integer, Integer) : List<User>
+  ├── +getNotFollowedUsers(Integer, Integer, Integer) : List<User>
+  └── +saveProfilePicture(Part, String) : String
+
+  CLASS PostService [Singleton]
+  ├── -PostRepository postRepository
+  ├── +add(Post) : void
+  ├── +delete(Integer id, Integer userId) : void
+  ├── +getPrivatPosts(Integer userId) : List<Post>
+  ├── +getCollaPosts(String colla, Integer userId) : List<Post>
+  ├── +getTotsPosts(Integer userId) : List<Post>
+  ├── +getPublicPostsByUser(Integer targetId, Integer viewerId) : List<Post>
+  ├── +getPrivatPostsByUser(Integer targetId, Integer viewerId) : List<Post>
+  ├── +like(Integer userId, Integer postId) : int
+  ├── +unlike(Integer userId, Integer postId) : int
+  └── +getPostsByUser(Integer, Integer, Integer) : List<Post>  [legacy]
+
+
+  RELATIONS BETWEEN CLASSES
+  ──────────────────────────
+  UserRepository    <<uses>>  User
+  PostRepository    <<uses>>  Post
+  UserService       <<aggregates>>  UserRepository  [Singleton ref]
+  PostService       <<aggregates>>  PostRepository  [Singleton ref]
+  Login Servlet     <<uses>>  UserService
+  Register Servlet  <<uses>>  UserService
+  AddPost Servlet   <<uses>>  PostService
+  MainPage Servlet  <<uses>>  PostService
+  Profile Servlet   <<uses>>  PostService
+  ViewUserProfile   <<uses>>  UserRepository, PostService
+  Follow Servlet    <<uses>>  UserService
+  Unfollow Servlet  <<uses>>  UserService
+  LikePost Servlet  <<uses>>  PostService
+  UnlikePost Servlet <<uses>> PostService
+  UpdateProfile     <<uses>>  UserService
+  UsersSearch Servlet <<uses>> UserService
+
+
+  ── 3B. ENTITY-RELATION DIAGRAM ──────────────────────────────────────────────
+
+  TABLES
+  ───────
+
+  ENTITY: users
+  ├── id          INTEGER PK AUTOINCREMENT
+  ├── name        VARCHAR(20) NOT NULL
+  ├── username    VARCHAR(50) NOT NULL UNIQUE
+  ├── password    VARCHAR(255) NOT NULL
+  ├── email       VARCHAR(100) NOT NULL UNIQUE
+  ├── location    VARCHAR(100)
+  ├── userType    VARCHAR(100) NOT NULL  ("CASTELLER" | "ESPECTADOR")
+  ├── posicions   VARCHAR(100)           (coma-separated, only CASTELLER)
+  ├── picture     VARCHAR(255)           (path: assets/nom.png)
+  └── colla       VARCHAR(100)           (only CASTELLER)
+
+  ENTITY: admin
+  ├── user_id     INT PK, FK → users(id) ON DELETE CASCADE
+  └── is_admin    INTEGER DEFAULT 1
+
+  ENTITY: post
+  ├── id          INTEGER PK AUTOINCREMENT
+  ├── user_id     INT NOT NULL, FK → users(id) ON DELETE CASCADE
+  ├── parent_id   INT, FK → post(id) ON DELETE CASCADE  [per a replies, futur]
+  ├── diada_id    INT                                    [per a events, futur]
+  ├── private     INTEGER DEFAULT 0                      (0=tots, 1=privat, 2=colla)
+  ├── colla_name  VARCHAR(100)                           (only if private=2)
+  ├── text        VARCHAR(500)
+  ├── image_path  VARCHAR(500)                           [per a imatges, futur]
+  └── created_at  TEXT                                   ("yyyy-MM-dd HH:mm:ss")
+
+  ENTITY: likes
+  ├── user_id     INT, FK → users(id) ON DELETE CASCADE
+  ├── post_id     INT, FK → post(id) ON DELETE CASCADE
+  └── PRIMARY KEY (user_id, post_id)                    [evita duplicats]
+
+  ENTITY: follows
+  ├── follower_id INT, FK → users(id) ON DELETE CASCADE
+  ├── followed_id INT, FK → users(id) ON DELETE CASCADE
+  ├── followed_at TEXT                                   ("yyyy-MM-dd")
+  └── PRIMARY KEY (follower_id, followed_id)            [evita duplicats]
+
+  ENTITY: diada  [Events]
+  ├── id          INTEGER PK AUTOINCREMENT
+  ├── dia         TEXT NOT NULL
+  ├── location    VARCHAR(100)
+  ├── colla       VARCHAR(100)
+  └── created_at  TEXT
+
+  ENTITY: review  [Valoració de diades]
+  ├── id          INTEGER PK AUTOINCREMENT
+  ├── diada_id    INT NOT NULL, FK → diada(id) ON DELETE CASCADE
+  ├── user_id     INT NOT NULL, FK → users(id) ON DELETE CASCADE
+  ├── value       INT                                    (1-5 estrelles)
+  ├── comment     VARCHAR(255)
+  ├── espectador  INTEGER NOT NULL                       (0=casteller, 1=espectador)
+  └── created_at  TEXT
+
+  RELATIONSHIPS
+  ──────────────
+  users   1──────────────0..1  admin
+            (un usuari pot ser admin)
+
+  users   1──────────────*  post
+            (un usuari publica molts posts)
+            [FK: post.user_id → users.id]
+
+  post    0..1────────────*  post
+            (un post pot tenir replies; parent_id auto-referència)
+
+  users   *──────────────*  likes
+            (molts usuaris donen like a molts posts)
+            [tabla pivot: likes(user_id, post_id)]
+
+  users   *──────────────*  follows
+            (molts usuaris segueixen molts usuaris)
+            [tabla pivot: follows(follower_id, followed_id)]
+
+  diada   1──────────────*  review
+            (una diada té moltes valoracions)
+            [FK: review.diada_id → diada.id]
+
+  users   1──────────────*  review
+            (un usuari fa moltes valoracions)
+            [FK: review.user_id → users.id]
+
+
+════════════════════════════════════════════════════════════════════════════════
+  4. MVC DIAGRAM
+════════════════════════════════════════════════════════════════════════════════
+
+  ARQUITECTURA MVC AMB 4 CAPES
+  ──────────────────────────────
+
+  [BROWSER/VIEW] ←──── HTML/JSP/CSS/JS ────→ [CONTROLLER] ←→ [SERVICE] ←→ [REPOSITORY] ←→ [SQLite DB]
+
+
+  DETALL DE CADA CAPA
+  ────────────────────
+
+  ── VIEW (src/main/webapp/) ──────────────────────────────────────────────────
+
+  index.html          SPA shell: navigation bar, content div, footer,
+                       jQuery event handlers globals (bindEvents)
+  Login.jsp           Formulari login
+  Register.jsp        Formulari registre
+  Welcome.jsp         Pàgina de benvinguda post-login
+  MainPage.jsp        Fòrum amb 3 tabs: Privat | Colla | Tots
+  Profile.jsp         Perfil propi (view-mode + edit-mode + tabs posts)
+  UserProfile.jsp     Perfil d'altre usuari (tabs Privat/Públic + lock si no segueix)
+  UsersSearch.jsp     Gestió seguidors: lupa + cards amb botons Follow/Unfollow/Eye
+  MenuLogged.html     Barra de navegació per a usuaris registrats
+  MenuAdmin.html      Barra de navegació per a administradors (afegeix Gestió d'usuaris)
+  UsersManagement.jsp Gestió admin d'usuaris
+  Eventos.jsp         Pàgina d'esdeveniments (diades)
+  Info.jsp            Pàgina d'informació/inici
+  css/style.css       Estils globals (tema granat, cards, forms, footer)
+
+
+  ── CONTROLLER (src/main/java/epaw/lab3/controller/) ────────────────────────
+
+  Login.java          @WebServlet("/Login") @MultipartConfig
+                       GET → Login.jsp | POST → login() → Welcome.jsp | Login.jsp+errors
+
+  Register.java       @WebServlet("/Register") @MultipartConfig
+                       GET → Register.jsp | POST → register() → Login.jsp | Register.jsp+errors
+
+  Logout.java         @WebServlet("/Logout")
+                       GET/POST → session.invalidate() → redirect
+
+  Profile.java        @WebServlet("/Profile")
+                       GET → carrega ownPublicPosts + ownPrivatPosts → Profile.jsp
+
+  UpdateProfile.java  @WebServlet("/UpdateProfile")
+                       POST (url-encoded) → updateProfile() → "ok" | 400+JSON errors
+                       [actualitza sessió si OK]
+
+  ViewUserProfile.java @WebServlet("/ViewUserProfile")
+                       GET ?uid=X → findFullById + isFollowing + posts → UserProfile.jsp
+
+  MainPage.java       @WebServlet("/MainPage")
+                       GET → privatPosts + totsPosts [+ collaPosts si CASTELLER] → MainPage.jsp
+
+  AddPost.java        @WebServlet("/AddPost")
+                       POST {content, visibility} → add(Post) → no body (AJAX recarrega)
+
+  DelPost.java        @WebServlet("/DelPost")
+                       POST {id} → delete(id, userId) → no body
+
+  LikePost.java       @WebServlet("/LikePost")
+                       POST {id} → like(userId, postId) → plain text count
+
+  UnlikePost.java     @WebServlet("/UnlikePost")
+                       POST {id} → unlike(userId, postId) → plain text count
+
+  Follow.java         @WebServlet("/Follow")
+                       POST {id} → follow(followerId, targetId) → no body
+
+  Unfollow.java       @WebServlet("/Unfollow")
+                       POST {id} → unfollow(followerId, targetId) → no body
+
+  UsersSearch.java    @WebServlet("/UsersSearch")
+                       GET → followedUsers + notFollowedUsers → UsersSearch.jsp
+
+  UsersManagement.java @WebServlet("/UsersManagement")
+                       GET → getAllUsers() → UsersManagement.jsp
+
+  Menu.java           @WebServlet("/Menu")
+                       GET → MenuAdmin.html (si isAdmin) | MenuLogged.html
+
+  Content.java        @WebServlet("/Content")
+                       GET → pàgina inicial (Info.jsp o Login.jsp)
+
+  Timeline.java       @WebServlet("/Timeline")  [legacy]
+  Posts.java          @WebServlet("/Posts")      [legacy]
+  Followed.java       @WebServlet("/Followed")   [legacy]
+  NotFollowed.java    @WebServlet("/NotFollowed") [legacy]
+  Info.java           @WebServlet("/Info")
+  Eventos.java        @WebServlet("/Eventos")
+
+
+  ── SERVICE (src/main/java/epaw/lab3/service/) ───────────────────────────────
+
+  UserService.java    Singleton. Gestiona: register, login, updateProfile,
+                       follow, unfollow, getFollowedUsers, getNotFollowedUsers,
+                       getAllUsers, saveProfilePicture, validate
+
+  PostService.java    Singleton. Gestiona: add, delete, like, unlike,
+                       getPrivatPosts, getCollaPosts, getTotsPosts,
+                       getPublicPostsByUser, getPrivatPostsByUser
+
+
+  ── REPOSITORY (src/main/java/epaw/lab3/repository/) ────────────────────────
+
+  BaseRepository.java Abstract. Obre connexió SQLite JDBC.
+                       Connection db = DriverManager.getConnection("jdbc:sqlite:lab3.db")
+
+  UserRepository.java Singleton. CRUD users + follows + admin check.
+                       SELECT_COLS: JOIN amb admin per isAdmin flag.
+
+  PostRepository.java Singleton. CRUD post + likes.
+                       SELECT_COLS: inclou likeCount i likedByMe com a subqueries.
+                       SimpleDateFormat("yyyy-MM-dd HH:mm:ss") per a TEXT columns.
+
+
+  ── MODEL (src/main/java/epaw/lab3/model/) ───────────────────────────────────
+
+  User.java           POJO. Camp isAdmin per al flag admin.
+  Post.java           POJO. Camps computats: likeCount, likedByMe.
+
+
+  FLUX DE DADES MVC (exemple AddPost)
+  ──────────────────────────────────────
+
+  1. VIEW (MainPage.jsp) → click .submitPost → index.html (JS event handler)
+  2. index.html → $.post("AddPost", {content, visibility})
+  3. CONTROLLER (AddPost.java) → rep request
+  4. CONTROLLER → SERVICE (PostService.add(post))
+  5. SERVICE → REPOSITORY (PostRepository.save(post))
+  6. REPOSITORY → SQLite DB (INSERT INTO post)
+  7. DB → REPOSITORY: OK
+  8. CONTROLLER → no response body (empty 200)
+  9. index.html → $.load("MainPage")
+  10. CONTROLLER (MainPage.java) → SERVICE → REPOSITORY → DB → llista posts
+  11. CONTROLLER → VIEW (MainPage.jsp) renderitzat amb JSTL + atributs request
+
+
+════════════════════════════════════════════════════════════════════════════════
+  5. LAYOUT AND CSS STRUCTURE
+════════════════════════════════════════════════════════════════════════════════
+
+  ── 5A. HTML LAYOUT GLOBAL (index.html) ──────────────────────────────────────
+
+  <body>
+  ├── <div id="navigation" class="w3-theme w3-top">   ← NAVBAR (position: fixed, top)
+  │      └── carregat via $('#navigation').load("Menu") → MenuLogged/Admin.html
+  │
+  ├── <div class="w3-row-padding" style="margin-top:50px; margin-bottom:75px">
+  │    ├── <div class="w3-col m3 w3-hide-small" id="lcolumn">   ← COLUMNA ESQUERRA (oculta a mòbil)
+  │    │      └── (buit a la majoria de pàgines)
+  │    ├── <div class="w3-col m12" id="contentContainer">       ← CONTINGUT PRINCIPAL (12/12 columnes)
+  │    │      └── <div id="content">                            ← SPA: carrega JSPs via .load()
+  │    └── <div class="w3-col m3 w3-hide-small" id="rcolumn">   ← COLUMNA DRETA (oculta a mòbil)
+  │           └── (buit a la majoria de pàgines)
+  │
+  └── <footer class="w3-theme w3-bottom">              ← FOOTER (position: fixed, bottom)
+         ├── <p> Pompeu Fabra University @2026 </p>    ← text esquerra
+         └── <img xaneta.jpeg border-radius:50%>       ← logo circular dreta
+
+  NOTA: El disseny és single-column (m12). L'estructura lcolumn/rcolumn
+        existeix però no s'utilitza (buida via $('#lcolumn').html('') en
+        cada vista carregada).
+
+
+  ── 5B. NAVBAR (MenuLogged.html / MenuAdmin.html) ────────────────────────────
+
+  <div class="w3-bar w3-dark-grey">
+    [ESQUERRA, left-to-right]
+    ├── <a href="Info">     fa-home      </a>   ← icona casa
+    ├── <a href="MainPage"> Forums       </a>   ← text
+    ├── <a href="Eventos">  Esdeveniments</a>   ← text
+    ├── <a href="UsersSearch"> fa-search </a>   ← icona lupa
+    └── [ADMIN ONLY] <a href="UsersManagement"> Gestió d'usuaris </a>
+
+    [DRETA (w3-right)]
+    ├── <a href="Profile">  fa-user      </a>   ← icona persona
+    └── <a href="Logout">   fa-sign-out  </a>   ← icona sortida (w3-hide-small)
+
+  Active state: App.highlightMenu(href) afegeix classe .w3-white a l'element actiu.
+  Hover:        rgba(255,255,255,0.22) semi-transparent white (NO canvi de color sòlid)
+
+
+  ── 5C. LAYOUT PER PÀGINA ────────────────────────────────────────────────────
+
+  MAINPAGE (MainPage.jsp):
+  ├── background-image: assets/castellers_colors.jpg (full viewport, fixed)
+  ├── Tab bar: w3-bar w3-card
+  │    └── [Privat] [Colla*] [Tots]   (* only CASTELLER amb colla)
+  ├── Tab content (un a la vegada, display:none per als inactius):
+  │    ├── Card input (textarea + botó Publicar)
+  │    └── List of post cards (w3-card w3-white w3-round)
+  │         ├── avatar (w3-circle, 48x48)
+  │         ├── username + timestamp
+  │         ├── contingut
+  │         └── [Like button] [Delete button si propi]
+  └── Tab logic: showTab(name) amb JS pur (classList toggle w3-theme / w3-light-grey)
+
+  PROFILE (Profile.jsp):
+  ├── background-image: assets/castell_colors_closeup.jpg
+  ├── Card #1: view-mode
+  │    ├── avatar centrat (120x120, w3-circle)
+  │    ├── name, @username
+  │    ├── info: email, localitat, tipus, colla, posicions
+  │    └── botó "Editar perfil" (w3-right)
+  ├── Card #2: edit-mode (display:none per defecte)
+  │    └── form#editProfileForm: inputs name, email, location, colla (datalist),
+  │         posicions (select multiple), botons Guardar/Cancel·lar
+  └── Section posts (sota):
+       ├── Tab bar: [Privat] [Públic]
+       └── Post cards (per cada tab)
+
+  USERS SEARCH (UsersSearch.jsp):
+  ├── background-image: assets/castellers_colors.jpg
+  └── Single card (w3-card w3-white):
+       ├── Title: "Gestió de seguidors"
+       ├── Search bar: input + botó Cerca [oninput + Enter]
+       ├── Count message (#searchCount, display:none per defecte)
+       ├── Section "A qui segueixes" (section-header div)
+       │    └── User rows (flex, .user-card[data-username]):
+       │         ├── avatar (50x50, circular)
+       │         ├── nom + @username
+       │         ├── [Eye icon blue]  ← .viewProfile[data-uid]
+       │         └── [Unfollow red]   ← .unfollowUser
+       └── Section "Suggeriments" (section-header div)
+            └── User rows:
+                 ├── avatar, nom, @username
+                 ├── [Eye icon blue]  ← .viewProfile[data-uid]
+                 └── [Follow green]   ← .followUser
+
+  USER PROFILE (UserProfile.jsp):
+  ├── background-image: assets/castell_colors_closeup.jpg
+  ├── Header card: avatar (100x100), nom, @username, localitat, tipus, colla, posicions
+  ├── Tab bar: [Privat] [Públic]
+  └── Tabs:
+       ├── Privat:
+       │    ├── [si isFollowing=false] → missatge "Encara no segueixes a aquesta persona" + icona fa-lock
+       │    └── [si isFollowing=true]  → post cards (sense botó delete, amb like toggle)
+       └── Públic: → post cards (sempre visibles)
+
+
+  ── 5D. PALETA DE COLORS (CSS Variables) ─────────────────────────────────────
+
+  --primary:        #7f1d1d   (granat principal - fons navbar, botons, tabs actius)
+  --primary-hover:  #991b1b   (granat fosc - hover de botons)
+  --primary-dark:   #8b1c1c   (granat molt fosc)
+  --bg:             #f5f7fa   (fons general de la pàgina)
+  --card:           #ffffff   (fons de cards)
+  --text:           #222      (text principal)
+  --text-dark:      #1e293b   (text fosc - labels)
+  --text-muted:     #64748b   (text apagat - info secundària)
+  --border:         #e2e8f0   (border de inputs i separadors)
+  --success:        #16a34a   (verd - border esquerra d'input vàlid)
+  --error:          #991b1b   (vermell - border esquerra d'input invàlid)
+
+
+  ── 5E. TIPOGRAFIA ───────────────────────────────────────────────────────────
+
+  Font principal: system-ui, sans-serif
+  (font del sistema operatiu, sense càrrega externa)
+
+  Mides:
+  - Títols h2/h3: hereten de W3.CSS
+  - Text normal: 14-16px (W3.CSS base)
+  - Text petit: .w3-small (~12px)
+  - Footer: default
+
+  Pesos:
+  - Labels de formulari: font-weight: 600
+  - Botons: font-weight: 600
+
+
+  ── 5F. ICONOGRAFIA ──────────────────────────────────────────────────────────
+
+  Biblioteca: Font Awesome 4.7.0 (CDN: cdnjs.cloudflare.com)
+
+  Icones usades:
+  - fa-home          → menú inici
+  - fa-search        → menú buscar usuaris
+  - fa-user          → menú perfil
+  - fa-sign-out      → menú logout
+  - fa-users         → fòrum colla / gestió seguidors
+  - fa-lock          → fòrum privat / contingut bloquejat
+  - fa-globe         → fòrum tots / posts públics
+  - fa-thumbs-up     → like/unlike
+  - fa-trash         → eliminar post
+  - fa-send          → publicar post
+  - fa-pencil        → editar perfil
+  - fa-save          → guardar canvis
+  - fa-times         → cancel·lar
+  - fa-user-plus     → seguir usuari
+  - fa-user-times    → deixar de seguir
+  - fa-eye           → veure perfil d'usuari
+  - fa-heart         → secció "A qui segueixes"
+
+
+  ── 5G. FRAMEWORK CSS ────────────────────────────────────────────────────────
+
+  W3.CSS (versió 5, https://www.w3schools.com/w3css/5/w3.css)
+  Classes principals usades:
+  - w3-bar, w3-bar-item          : navbar + tab bars
+  - w3-button                    : botons
+  - w3-card                      : targetes de contingut (border-radius: 16px custom)
+  - w3-round                     : border-radius
+  - w3-white, w3-light-grey      : fons de cards
+  - w3-theme, w3-text-theme      : color temàtic granat (sobreescrit amb CSS vars)
+  - w3-circle                    : avatars circulars
+  - w3-left, w3-right, w3-clear  : floats
+  - w3-animate-opacity           : animació entrada posts
+  - w3-top, w3-bottom            : fixed positioning navbar i footer
+  - w3-col m12                   : columna 100% amplada (grid 12 columnes)
+  - w3-hide-small                : oculta a mòbil (<601px)
+  - w3-padding, w3-margin-*      : espaiat
+
+
+  ── 5H. RESPONSIVE ───────────────────────────────────────────────────────────
+
+  @media (max-width: 768px):
+  - #contentContainer: padding reduït (12px)
+  - #loginForm, #registerForm: margin i padding reduïts
+  - Navbar: mostra menú hamburguesa (&#9776;) al costat dret
+    w3-hide-large w3-hide-medium → App.stack() → toggle #stack w3-bar-block
+
+  Columnes:
+  - Desktop (>992px): lcolumn m3 | content m12 | rcolumn m3 (però lcolumn i rcolumn buits)
+  - Tablet/Mòbil:     lcolumn i rcolumn ocultats (w3-hide-small), content full-width
+
+
+  ── 5I. BACKGROUNDS PER PÀGINA ───────────────────────────────────────────────
+
+  MainPage i UsersSearch:
+    background-image: url('assets/castellers_colors.jpg')
+    background-size: cover; background-attachment: fixed; background-position: center
+    min-height: 100vh; margin: -50px -9999px; padding: 50px 9999px 24px
+    [el marge negatiu gran permet que el fons cobreixi el padding del w3-row-padding]
+
+  Profile i UserProfile:
+    background-image: url('assets/castell_colors_closeup.jpg')
+    [mateixa tècnica de margin negatiu]
+
+
+  ── 5J. ASSETS ───────────────────────────────────────────────────────────────
+
+  assets/castellers_colors.jpg    → fons MainPage + UsersSearch
+  assets/castell_colors_closeup.jpg → fons Profile + UserProfile
+  assets/xaneta.jpeg              → logo footer (64x64, border-radius:50%)
+  assets/anna.png                 → foto Anna Castells (anna_cast)
+  assets/pere.png                 → foto Pere Vila (pere_vila)
+  assets/maria.png                → foto Maria Torres (maria_t)
+  assets/joan.png                 → foto Joan Espectador (joan_e)
+  assets/laia.png                 → foto Laia Grau (laia_g)
+  assets/mar.png                  → foto Admin (admin)
+  assets/default_avatar.png       → avatar per defecte si picture=null
+  assets/upf.png                  → favicon (pestanya del browser)
+
+
+════════════════════════════════════════════════════════════════════════════════
+  6. SEED DATA (DB)
+════════════════════════════════════════════════════════════════════════════════
+
+  USUARIS (password: Test1234!)
+  ──────────────────────────────
+  id  username     name               userType    colla                             isAdmin
+  1   anna_cast    Anna Castells      CASTELLER   Castellers de Vilafranca          0
+  2   pere_vila    Pere Vila          CASTELLER   Colla Joves Xiquets de Valls      0
+  3   maria_t      Maria Torres       CASTELLER   Colla Vella dels Xiquets de Valls 0
+  4   joan_e       Joan Espectador    ESPECTADOR  null                              0
+  5   laia_g       Laia Grau          ESPECTADOR  null                              0
+  6   admin        Admin Casteller    CASTELLER   Minyons de Terrassa               1
+
+  FOLLOWS SEED
+  ─────────────
+  anna_cast  → segueix → pere_vila
+  anna_cast  → segueix → maria_t
+  pere_vila  → segueix → anna_cast
+  joan_e     → segueix → anna_cast
+  laia_g     → segueix → pere_vila
+
+  POSTS SEED
+  ───────────
+  visibility=0 (tots): 2 posts (anna_cast + admin)
+  visibility=1 (privat): 2 posts (anna_cast + pere_vila)
+  visibility=2 (colla): 2 posts (maria_t@CollaVella + admin@Minyons)
+
+================================================================================
+  FI DEL DOCUMENT
+================================================================================

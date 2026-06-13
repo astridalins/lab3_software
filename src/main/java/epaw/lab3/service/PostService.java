@@ -51,6 +51,15 @@ public class PostService {
         return postRepository.removeLike(userId, postId);
     }
 
+    // ── posts by user (profile view) ─────────────────────────────────────────
+    public List<Post> getPublicPostsByUser(Integer targetUserId, Integer viewerUserId) {
+        return postRepository.findPublicByUser(targetUserId, viewerUserId);
+    }
+
+    public List<Post> getPrivatPostsByUser(Integer targetUserId, Integer viewerUserId) {
+        return postRepository.findPrivatByUser(targetUserId, viewerUserId);
+    }
+
     // ── legacy (Timeline/Posts tab) ───────────────────────────────────────────
     public List<Post> getPostsByUser(Integer userId, Integer start, Integer end) {
         Optional<List<Post>> posts = postRepository.findByUser(userId, start, end);

@@ -18,32 +18,40 @@
 	<script src="js/RegisterValidation.js"></script>
 
 	<script>
+		App.currentPage = '';
+
+		App.highlightMenu = function (href) {
+			$(".menu").removeClass("w3-white");
+			if (href) $(".menu[href='" + href + "']").addClass("w3-white");
+		};
+
 		App.init = function () {
 
 			$.ajaxSetup({ cache: false });
-			// Load initial content
 			$('#navigation').load("Menu");
 			$('#content').load("Content");
-			$('#lcolumn').html("<p/>");
-			$('#rcolumn').html("<p/>");
-			// Attach global events
+			$('#lcolumn').html('');
+			$('#rcolumn').html('');
 			App.bindEvents();
 
 		};
 
 		App.bindEvents = function () {
 
-			// Menu clicks — clear columns on every navigation
+			// Menu clicks
 			$(document).on("click", ".menu", function (event) {
 				event.preventDefault();
+				App.currentPage = $(this).attr('href');
 				$('#lcolumn').html('');
 				$('#rcolumn').html('');
-				$('#content').load($(this).attr('href'), function () {
-					$('#navigation').load("Menu");
+				$('#content').load(App.currentPage, function () {
+					$('#navigation').load("Menu", function () {
+						App.highlightMenu(App.currentPage);
+					});
 				});
 			});
 
-			// Form submission via AJAX (Register, Login, Profile edit…)
+			// Form submission via AJAX (Register, Login…)
 			$(document).on("submit", "form", function (event) {
 				event.preventDefault();
 				const form = this;
@@ -56,7 +64,9 @@
 					processData: false,
 					contentType: false
 				}).done(function (html) {
-					$('#navigation').load("Menu");
+					$('#navigation').load("Menu", function () {
+						App.highlightMenu(App.currentPage);
+					});
 					$("#content").html(html);
 				});
 			});
@@ -69,6 +79,13 @@
 				});
 			});
 
+			/* View user profile (UsersSearch) */
+			$(document).on("click", ".viewProfile", function (event) {
+				event.preventDefault();
+				const uid = $(this).data("uid");
+				$("#content").load("ViewUserProfile?uid=" + uid);
+			});
+
 			/* Unfollow user (UsersSearch) */
 			$(document).on("click", ".unfollowUser", function (event) {
 				event.preventDefault();
@@ -77,24 +94,77 @@
 				});
 			});
 
-			/* Submit post from any forum tab (MainPage) */
+			/* Show filename when image is selected */
+			$(document).on("change", ".postImage", function () {
+				const name = this.files[0] ? this.files[0].name : '';
+				$(this).closest(".post-creator").find(".imageFileName").text(name);
+			});
+
+			/* Submit post from any forum tab (MainPage) — multipart for image support */
 			$(document).on("click", ".submitPost", function (event) {
 				event.preventDefault();
-				const btn    = $(this);
-				const txId   = btn.data("textarea");
-				const content = $("#" + txId).val().trim();
-				if (!content) return;
-				const vis = btn.data("visibility");
-				$.post("AddPost", { content: content, visibility: vis }, function () {
-					$("#content").load("MainPage");
+				const btn       = $(this);
+				const txId      = btn.data("textarea");
+				const content   = $("#" + txId).val().trim();
+				const creator   = btn.closest(".post-creator");
+				const fileInput = creator.find(".postImage")[0];
+				const hasImage  = fileInput && fileInput.files && fileInput.files[0];
+
+				// need text OR image
+				if (!content && !hasImage) return;
+
+				const fd = new FormData();
+				fd.append("content",    content);
+				fd.append("visibility", String(btn.data("visibility")));
+				if (hasImage) fd.append("image", fileInput.files[0]);
+
+				btn.prop("disabled", true);
+				$.ajax({
+					type: "POST",
+					url: "AddPost",
+					data: fd,
+					processData: false,
+					contentType: false,
+					success: function (resp) {
+						btn.prop("disabled", false);
+						if (resp.trim() === "ok") {
+							$("#" + txId).val("");
+							creator.find(".imageFileName").text("");
+							if (fileInput) fileInput.value = "";
+							$("#content").load("MainPage");
+						}
+					},
+					error: function () {
+						btn.prop("disabled", false);
+					}
 				});
 			});
 
-			/* Delete post (MainPage) */
+			/* Delete post — reloads the current page (MainPage or Profile) */
 			$(document).on("click", ".delPost", function (event) {
 				event.preventDefault();
 				$.post("DelPost", { id: $(this).closest("[id]").attr("id") }, function () {
-					$("#content").load("MainPage");
+					const page = (App.currentPage === "Profile") ? "Profile" : "MainPage";
+					$("#content").load(page);
+				});
+			});
+
+			/* Save profile edits — url-encoded (no multipart needed) */
+			$(document).on("click", ".saveProfile", function (event) {
+				event.preventDefault();
+				$.ajax({
+					type: "POST",
+					url: "UpdateProfile",
+					data: $("#editProfileForm").serialize()
+				}).done(function () {
+					$("#content").load("Profile");
+				}).fail(function (xhr) {
+					try {
+						const errors = JSON.parse(xhr.responseText);
+						Object.keys(errors).forEach(function (key) {
+							$("#err-" + key).text(errors[key]);
+						});
+					} catch (e) {}
 				});
 			});
 
@@ -151,8 +221,13 @@
 	</div>
 	<!-- End Content -->
 	<!-- Footer -->
-	<footer class="w3-container w3-theme w3-bottom">
-		<p>Pompeu Fabra University @2026</p>
+	<footer class="w3-theme w3-bottom"
+	        style="display:flex; align-items:center; justify-content:space-between;
+	               padding:8px 20px; min-height:80px;">
+		<p style="margin:0">Pompeu Fabra University @2026</p>
+		<img src="assets/xaneta.jpeg" alt="Xaneta"
+		     style="width:64px; height:64px; border-radius:50%; object-fit:cover;
+		            box-shadow:0 2px 8px rgba(0,0,0,0.4);">
 	</footer>
 
 </body>
