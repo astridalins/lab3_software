@@ -98,11 +98,9 @@
             value="${user.colla}"
             placeholder="Escriu o selecciona una colla" />
         <datalist id="collesList">
-            <option value="Castellers de Vilafranca">
-            <option value="Colla Vella dels Xiquets de Valls">
-            <option value="Colla Joves Xiquets de Valls">
-            <option value="Minyons de Terrassa">
-            <option value="Capgrossos de Mataró">
+            <c:forEach var="c" items="${colles}">
+                <option value="${c.name}">
+            </c:forEach>
         </datalist>
     </div>
 

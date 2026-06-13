@@ -85,9 +85,11 @@ function cercaUsuaris() {
                     <button type="button" class="viewProfile w3-button w3-blue w3-round" data-uid="${u.id}" style="flex-shrink:0">
                         <i class="fa fa-eye"></i>
                     </button>
+                    <c:if test="${sessionScope.user.admin != 1}">
                     <button type="button" class="unfollowUser w3-button w3-red w3-round" style="flex-shrink:0">
                         <i class="fa fa-user-times"></i> Deixar de seguir
                     </button>
+                    </c:if>
                 </div>
             </c:forEach>
         </c:otherwise>
@@ -118,9 +120,11 @@ function cercaUsuaris() {
                     <button type="button" class="viewProfile w3-button w3-blue w3-round" data-uid="${u.id}" style="flex-shrink:0">
                         <i class="fa fa-eye"></i>
                     </button>
+                    <c:if test="${sessionScope.user.admin != 1}">
                     <button type="button" class="followUser w3-button w3-green w3-round" style="flex-shrink:0">
                         <i class="fa fa-user-plus"></i> Seguir
                     </button>
+                    </c:if>
                 </div>
             </c:forEach>
         </c:otherwise>

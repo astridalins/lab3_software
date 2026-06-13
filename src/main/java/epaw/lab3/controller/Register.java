@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import epaw.lab3.model.User;
+import epaw.lab3.service.CollaService;
 import epaw.lab3.service.UserService;
 
 import java.io.IOException;
@@ -29,6 +30,7 @@ public class Register extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
+		request.setAttribute("colles", CollaService.getInstance().getTotes());
 		request.getRequestDispatcher("Register.jsp").forward(request, response);
 
 	}
@@ -53,6 +55,7 @@ public class Register extends HttpServlet {
 		} else {
 			request.setAttribute("user", user);
 			request.setAttribute("errors", errors);
+			request.setAttribute("colles", CollaService.getInstance().getTotes());
 			request.getRequestDispatcher("Register.jsp").forward(request, response);
 		}
 

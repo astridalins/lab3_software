@@ -28,9 +28,25 @@ public class PostService {
         postRepository.delete(id, userId);
     }
 
+    public void deleteAsAdmin(Integer id) {
+        postRepository.deleteAsAdmin(id);
+    }
+
+    public void update(Integer id, Integer userId, String content) {
+        postRepository.update(id, userId, content);
+    }
+
     // ── forum posts ───────────────────────────────────────────────────────────
     public List<Post> getPrivatPosts(Integer userId) {
         return postRepository.findPrivat(userId);
+    }
+
+    public List<Post> getAllPrivatPosts(Integer adminId) {
+        return postRepository.findAllPrivat(adminId);
+    }
+
+    public List<Post> getAllCollaPosts(Integer adminId) {
+        return postRepository.findAllColla(adminId);
     }
 
     public List<Post> getCollaPosts(String colla, Integer userId) {
@@ -49,6 +65,15 @@ public class PostService {
 
     public int unlike(Integer userId, Integer postId) {
         return postRepository.removeLike(userId, postId);
+    }
+
+    // ── replies ───────────────────────────────────────────────────────────────
+    public List<Post> getRepliesByPost(Integer parentId, Integer viewerUserId) {
+        return postRepository.findReplies(parentId, viewerUserId);
+    }
+
+    public List<Post> getRepliesByUser(Integer userId, Integer viewerUserId) {
+        return postRepository.findRepliesByUser(userId, viewerUserId);
     }
 
     // ── posts by user (profile view) ─────────────────────────────────────────

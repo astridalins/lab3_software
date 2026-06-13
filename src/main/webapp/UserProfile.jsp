@@ -9,7 +9,7 @@ $(document).ready(function(){
 });
 
 function showUPTab(name) {
-    ['privat','public'].forEach(function(t) {
+    ['privat','public','respostes'].forEach(function(t) {
         document.getElementById('uptab-' + t).style.display = (t === name) ? 'block' : 'none';
     });
     document.querySelectorAll('.uptab-btn').forEach(function(b) {
@@ -54,11 +54,29 @@ function showUPTab(name) {
           onclick="showUPTab('public')">
     <i class="fa fa-globe"></i> Públic
   </button>
+  <button id="upbtn-respostes" class="uptab-btn w3-bar-item w3-button w3-light-grey w3-round"
+          onclick="showUPTab('respostes')">
+    <i class="fa fa-reply"></i> Respostes
+  </button>
 </div>
 
 <%-- ══ TAB PRIVAT ══════════════════════════════════════════════════════ --%>
 <div id="uptab-privat">
   <c:choose>
+    <c:when test="${isAnonymous}">
+      <div class="w3-panel w3-card w3-white w3-round w3-padding w3-center">
+        <i class="fa fa-lock w3-xxlarge w3-text-grey" style="margin-bottom:12px;display:block"></i>
+        <p class="w3-text-grey">Inicia sessió per accedir al contingut privat.</p>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <a class="menu w3-button w3-theme w3-round w3-small" href="Login">
+            <i class="fa fa-sign-in"></i> Login
+          </a>
+          <a class="menu w3-button w3-light-grey w3-round w3-small" href="Register">
+            <i class="fa fa-user-plus"></i> Registre
+          </a>
+        </div>
+      </div>
+    </c:when>
     <c:when test="${not isFollowing}">
       <div class="w3-panel w3-card w3-white w3-round w3-padding w3-center">
         <i class="fa fa-lock w3-xxlarge w3-text-grey" style="margin-bottom:12px;display:block"></i>
@@ -77,7 +95,7 @@ function showUPTab(name) {
           <span class="w3-right w3-opacity w3-small">${p.postDateTime}</span>
           <strong>${p.uname}</strong><br>
           <hr class="w3-clear">
-          <p>${p.content}</p>
+          <p class="post-text">${p.content}</p>
           <c:if test="${not empty p.imagePath}">
             <img src="${p.imagePath}" alt="imatge del post"
                  style="max-width:100%; border-radius:10px; margin-bottom:8px; display:block">
@@ -86,6 +104,11 @@ function showUPTab(name) {
                   data-liked="${p.likedByMe}">
             <i class="fa fa-thumbs-up"></i> <span class="likeCount">${p.likeCount}</span>
           </button>
+          <c:if test="${sessionScope.user.admin == 1}">
+            <button type="button" class="delPost w3-button w3-red w3-round w3-small">
+              <i class="fa fa-trash"></i> Eliminar
+            </button>
+          </c:if>
         </div>
       </c:forEach>
     </c:otherwise>
@@ -106,15 +129,82 @@ function showUPTab(name) {
           <span class="w3-right w3-opacity w3-small">${p.postDateTime}</span>
           <strong>${p.uname}</strong><br>
           <hr class="w3-clear">
-          <p>${p.content}</p>
+          <p class="post-text">${p.content}</p>
           <c:if test="${not empty p.imagePath}">
             <img src="${p.imagePath}" alt="imatge del post"
                  style="max-width:100%; border-radius:10px; margin-bottom:8px; display:block">
           </c:if>
-          <button type="button" class="likeToggle w3-button w3-round w3-small ${p.likedByMe == 1 ? 'w3-blue' : 'w3-light-grey'}"
-                  data-liked="${p.likedByMe}">
-            <i class="fa fa-thumbs-up"></i> <span class="likeCount">${p.likeCount}</span>
-          </button>
+          <c:choose>
+            <c:when test="${isAnonymous}">
+              <button type="button" disabled class="w3-button w3-light-grey w3-round w3-small"
+                      title="Inicia sessió per fer like">
+                <i class="fa fa-thumbs-up"></i> ${p.likeCount}
+              </button>
+            </c:when>
+            <c:otherwise>
+              <button type="button" class="likeToggle w3-button w3-round w3-small ${p.likedByMe == 1 ? 'w3-blue' : 'w3-light-grey'}"
+                      data-liked="${p.likedByMe}">
+                <i class="fa fa-thumbs-up"></i> <span class="likeCount">${p.likeCount}</span>
+              </button>
+            </c:otherwise>
+          </c:choose>
+          <c:if test="${sessionScope.user.admin == 1}">
+            <button type="button" class="delPost w3-button w3-red w3-round w3-small">
+              <i class="fa fa-trash"></i> Eliminar
+            </button>
+          </c:if>
+        </div>
+      </c:forEach>
+    </c:otherwise>
+  </c:choose>
+</div>
+
+<%-- ══ TAB RESPOSTES ════════════════════════════════════════════════════ --%>
+<div id="uptab-respostes" style="display:none">
+  <c:choose>
+    <c:when test="${empty userReplies}">
+      <p class="w3-panel w3-white w3-round w3-opacity">Aquesta persona no ha fet cap resposta.</p>
+    </c:when>
+    <c:otherwise>
+      <c:forEach var="r" items="${userReplies}">
+        <div id="${r.id}" class="w3-card w3-white w3-round w3-padding w3-margin-bottom w3-animate-opacity">
+          <div class="w3-margin-bottom" style="background:#e8f4fd; border-radius:6px; padding:6px 10px; font-size:12px; color:#555">
+            <i class="fa fa-reply" style="color:#2196F3"></i>
+            <strong>Resposta</strong>
+            <c:if test="${not empty r.parentUname}"> a <em>${r.parentUname}</em></c:if>:
+            <c:if test="${not empty r.parentText}">
+              "<c:out value="${r.parentText.length() > 80 ? r.parentText.substring(0,80).concat('…') : r.parentText}"/>"
+            </c:if>
+          </div>
+          <img src="${empty r.userPicture ? 'assets/default_avatar.png' : r.userPicture}"
+               class="w3-left w3-circle w3-margin-right" style="width:40px;height:40px;object-fit:cover">
+          <span class="w3-right w3-opacity w3-small">${r.postDateTime}</span>
+          <strong>${r.uname}</strong><br>
+          <hr class="w3-clear">
+          <p>${r.content}</p>
+          <c:if test="${not empty r.imagePath}">
+            <img src="${r.imagePath}" style="max-width:100%; border-radius:10px; margin-bottom:8px; display:block">
+          </c:if>
+          <c:choose>
+            <c:when test="${isAnonymous}">
+              <button type="button" disabled class="w3-button w3-light-grey w3-round w3-small"
+                      title="Inicia sessió per fer like">
+                <i class="fa fa-thumbs-up"></i> ${r.likeCount}
+              </button>
+            </c:when>
+            <c:otherwise>
+              <button type="button"
+                      class="likeToggle w3-button w3-round w3-small ${r.likedByMe == 1 ? 'w3-blue' : 'w3-light-grey'}"
+                      data-liked="${r.likedByMe}">
+                <i class="fa fa-thumbs-up"></i> <span class="likeCount">${r.likeCount}</span>
+              </button>
+            </c:otherwise>
+          </c:choose>
+          <c:if test="${sessionScope.user.admin == 1}">
+            <button type="button" class="delPost w3-button w3-red w3-round w3-small">
+              <i class="fa fa-trash"></i> Eliminar
+            </button>
+          </c:if>
         </div>
       </c:forEach>
     </c:otherwise>

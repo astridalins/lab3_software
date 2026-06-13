@@ -297,6 +297,18 @@ public class UserRepository extends BaseRepository {
         return Optional.empty();
     }
 
+    // ── deleteById ───────────────────────────────────────────────────────────
+    public void deleteById(Integer id) {
+        // FK ON DELETE CASCADE handles posts, likes, follows, admin entries
+        String query = "DELETE FROM users WHERE id = ?";
+        try (PreparedStatement st = db.prepareStatement(query)) {
+            st.setInt(1, id);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     // ── existsByEmailExcluding ────────────────────────────────────────────────
     public boolean existsByEmailExcluding(String email, Integer userId) {
         String query = "SELECT COUNT(*) FROM users WHERE email = ? AND id != ?";

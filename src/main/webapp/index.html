@@ -42,6 +42,7 @@
 			$(document).on("click", ".menu", function (event) {
 				event.preventDefault();
 				App.currentPage = $(this).attr('href');
+				App.currentTab  = 'privat';  // reset tab memory on page change
 				$('#lcolumn').html('');
 				$('#rcolumn').html('');
 				$('#content').load(App.currentPage, function () {
@@ -49,6 +50,11 @@
 						App.highlightMenu(App.currentPage);
 					});
 				});
+			});
+
+			/* Track which MainPage tab is active */
+			$(document).on("click", ".tab-btn", function () {
+				App.currentTab = this.id.replace('btn-', '');
 			});
 
 			// Form submission via AJAX (Register, Login…)
@@ -79,8 +85,15 @@
 				});
 			});
 
-			/* View user profile (UsersSearch) */
+			/* View user profile (UsersSearch — logged in) */
 			$(document).on("click", ".viewProfile", function (event) {
+				event.preventDefault();
+				const uid = $(this).data("uid");
+				$("#content").load("ViewUserProfile?uid=" + uid);
+			});
+
+			/* View user profile (AnonUsersSearch — anonymous) */
+			$(document).on("click", ".anonViewProfile", function (event) {
 				event.preventDefault();
 				const uid = $(this).data("uid");
 				$("#content").load("ViewUserProfile?uid=" + uid);
@@ -100,7 +113,7 @@
 				$(this).closest(".post-creator").find(".imageFileName").text(name);
 			});
 
-			/* Submit post from any forum tab (MainPage) — multipart for image support */
+			/* Submit post from any forum tab (MainPage) */
 			$(document).on("click", ".submitPost", function (event) {
 				event.preventDefault();
 				const btn       = $(this);
@@ -108,44 +121,180 @@
 				const content   = $("#" + txId).val().trim();
 				const creator   = btn.closest(".post-creator");
 				const fileInput = creator.find(".postImage")[0];
-				const hasImage  = fileInput && fileInput.files && fileInput.files[0];
+				const hasImage  = fileInput && fileInput.files && fileInput.files.length > 0;
 
-				// need text OR image
 				if (!content && !hasImage) return;
 
 				const fd = new FormData();
 				fd.append("content",    content);
-				fd.append("visibility", String(btn.data("visibility")));
+				fd.append("visibility", "" + btn.data("visibility"));
 				if (hasImage) fd.append("image", fileInput.files[0]);
+				const collaInput = document.getElementById("collaTarget");
+				if (collaInput && collaInput.value) fd.append("collaTarget", collaInput.value);
 
-				btn.prop("disabled", true);
+				btn.prop("disabled", true).text("Publicant...");
+
 				$.ajax({
-					type: "POST",
-					url: "AddPost",
-					data: fd,
-					processData: false,
-					contentType: false,
+					type        : "POST",
+					url         : "AddPost",
+					data        : fd,
+					processData : false,
+					contentType : false,
 					success: function (resp) {
-						btn.prop("disabled", false);
-						if (resp.trim() === "ok") {
+						btn.prop("disabled", false).html('<i class="fa fa-send"></i> Publicar');
+						if ((resp || "").trim() === "ok") {
 							$("#" + txId).val("");
 							creator.find(".imageFileName").text("");
 							if (fileInput) fileInput.value = "";
-							$("#content").load("MainPage");
+							const tab = App.currentTab || 'privat';
+							$("#content").load("MainPage", function () {
+								if (typeof showTab === 'function') showTab(tab);
+							});
 						}
 					},
-					error: function () {
-						btn.prop("disabled", false);
+					error: function (xhr) {
+						btn.prop("disabled", false).html('<i class="fa fa-send"></i> Publicar');
+						console.error("AddPost error", xhr.status, xhr.responseText);
 					}
 				});
 			});
 
-			/* Delete post — reloads the current page (MainPage or Profile) */
+			/* Delete post — reloads page, or refreshes reply thread if inside replies-container */
 			$(document).on("click", ".delPost", function (event) {
 				event.preventDefault();
-				$.post("DelPost", { id: $(this).closest("[id]").attr("id") }, function () {
-					const page = (App.currentPage === "Profile") ? "Profile" : "MainPage";
-					$("#content").load(page);
+				const btn             = $(this);
+				const replyContainer  = btn.closest(".replies-container");
+				const postId          = btn.closest("[id]").attr("id");
+				const tab             = App.currentTab || 'privat';
+
+				$.post("DelPost", { id: postId }, function () {
+					if (replyContainer.length) {
+						// It's a reply inside an open thread — reload just the replies
+						const parentCard = replyContainer.closest("[id]");
+						const parentId   = parentCard.attr("id");
+						replyContainer.load("GetReplies?postId=" + parentId, function () {
+							const countSpan = parentCard.find(".replyCountText");
+							countSpan.text(Math.max(0, parseInt(countSpan.text() || "0") - 1));
+						});
+					} else {
+						const page = (App.currentPage === "Profile") ? "Profile" : "MainPage";
+						$("#content").load(page, function () {
+							if (page === 'MainPage' && typeof showTab === 'function') showTab(tab);
+						});
+					}
+				});
+			});
+
+			/* Toggle replies section on a post */
+			$(document).on("click", ".toggleReplies", function (event) {
+				event.preventDefault();
+				const btn       = $(this);
+				const card      = btn.closest("[id]");
+				const container = card.find(".replies-container");
+				if (container.is(":visible")) {
+					container.hide();
+					return;
+				}
+				if (container.children().length === 0) {
+					const postId = btn.data("postid");
+					container.load("GetReplies?postId=" + postId, function () {
+						container.show();
+					});
+				} else {
+					container.show();
+				}
+			});
+
+			/* Submit reply inside an open replies section */
+			$(document).on("click", ".submitReply", function (event) {
+				event.preventDefault();
+				const btn       = $(this);
+				const composer  = btn.closest(".reply-composer");
+				const container = btn.closest(".replies-container");
+				const postId    = composer.find(".replyParentId").val();
+				const content   = composer.find(".replyText").val().trim();
+				if (!content) return;
+
+				btn.prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+				const fd = new FormData();
+				fd.append("content",  content);
+				fd.append("visibility", "0");
+				fd.append("parentId", postId);
+
+				$.ajax({
+					type: "POST", url: "AddPost", data: fd,
+					processData: false, contentType: false,
+					success: function (resp) {
+						btn.prop("disabled", false).html('<i class="fa fa-reply"></i> Respondre');
+						if ((resp || "").trim() === "ok") {
+							composer.find(".replyText").val("");
+							container.load("GetReplies?postId=" + postId, function () {
+								// Update count badge
+								const parentCard = container.closest("[id]");
+								const countSpan  = parentCard.find(".replyCountText");
+								countSpan.text(parseInt(countSpan.text() || "0") + 1);
+							});
+						}
+					},
+					error: function () {
+						btn.prop("disabled", false).html('<i class="fa fa-reply"></i> Respondre');
+					}
+				});
+			});
+
+			/* Admin: delete user from UsersManagement */
+			$(document).on("click", ".deleteUser", function (event) {
+				event.preventDefault();
+				const uid  = $(this).data("uid");
+				const name = $(this).data("name");
+				if (!confirm('Segur que vols eliminar l\'usuari "' + name + '"?\nAquesta acció eliminarà també tots els seus posts i dades.')) return;
+				const btn = $(this);
+				btn.prop("disabled", true);
+				$.post("DeleteUser", { id: uid }, function (resp) {
+					if ((resp || "").trim() === "ok") {
+						$("#user-row-" + uid).fadeOut(300, function () { $(this).remove(); });
+					} else {
+						btn.prop("disabled", false);
+						alert("Error en eliminar l'usuari.");
+					}
+				});
+			});
+
+			/* Show inline post editor */
+			$(document).on("click", ".editPost", function (event) {
+				event.preventDefault();
+				const card    = $(this).closest("[id]");
+				const textEl  = card.find(".post-text");
+				const editBox = card.find(".post-edit-box");
+				editBox.find("textarea").val(textEl.text().trim());
+				textEl.hide();
+				editBox.show();
+			});
+
+			/* Cancel inline edit */
+			$(document).on("click", ".cancelEdit", function (event) {
+				event.preventDefault();
+				const card = $(this).closest("[id]");
+				card.find(".post-edit-box").hide();
+				card.find(".post-text").show();
+			});
+
+			/* Save inline edit */
+			$(document).on("click", ".saveEdit", function (event) {
+				event.preventDefault();
+				const btn     = $(this);
+				const card    = btn.closest("[id]");
+				const postId  = card.attr("id");
+				const content = card.find(".post-edit-box textarea").val().trim();
+				if (!content) return;
+				btn.prop("disabled", true).text("Guardant...");
+				$.post("EditPost", { id: postId, content: content }, function (resp) {
+					btn.prop("disabled", false).html('<i class="fa fa-save"></i> Guardar');
+					if ((resp || "").trim() === "ok") {
+						card.find(".post-text").text(content).show();
+						card.find(".post-edit-box").hide();
+					}
 				});
 			});
 
@@ -165,6 +314,49 @@
 							$("#err-" + key).text(errors[key]);
 						});
 					} catch (e) {}
+				});
+			});
+
+			/* ── DIADES ────────────────────────────────────────────────── */
+
+			/* Open create-diada modal */
+			$(document).on("click", "#openCreateDiadaBtn", function () {
+				$("#createDiadaModal").css("display", "flex");
+			});
+
+			/* Close modal */
+			$(document).on("click", "#closeDiadaModal, #cancelDiadaBtn", function () {
+				$("#createDiadaModal").hide();
+				var f = document.getElementById("createDiadaForm");
+				if (f) f.reset();
+			});
+
+			/* Submit new diada */
+			$(document).on("click", "#submitDiadaBtn", function () {
+				var btn  = $(this).prop("disabled", true);
+				var data = $("#createDiadaForm").serialize();
+				$.post("CreateDiada", data, function (resp) {
+					btn.prop("disabled", false);
+					if ((resp || "").trim() === "ok") {
+						$("#createDiadaModal").hide();
+						document.getElementById("createDiadaForm").reset();
+						$("#content").load("Eventos");
+					}
+				}).fail(function () { btn.prop("disabled", false); });
+			});
+
+			/* Delete diada */
+			$(document).on("click", ".deleteDiada", function () {
+				var id   = $(this).data("id");
+				var name = $(this).data("name");
+				if (!confirm('Segur que vols eliminar la diada "' + name + '"?')) return;
+				var btn = $(this).prop("disabled", true);
+				$.post("DeleteDiada", { id: id }, function (resp) {
+					if ((resp || "").trim() === "ok") {
+						$("#content").load("Eventos");
+					} else {
+						btn.prop("disabled", false);
+					}
 				});
 			});
 

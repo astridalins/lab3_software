@@ -27,10 +27,11 @@ public class PostRepository extends BaseRepository {
 
     // ── shared column select ──────────────────────────────────────────────────
     private static final String SELECT_COLS =
-        "SELECT p.id, p.user_id, p.created_at, p.text, p.private, p.colla_name, p.image_path, " +
+        "SELECT p.id, p.user_id, p.parent_id, p.created_at, p.text, p.private, p.colla_name, p.image_path, " +
         "       u.name AS uname, u.picture AS userPicture, " +
         "       (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likeCount, " +
-        "       (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) AS likedByMe " +
+        "       (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) AS likedByMe, " +
+        "       (SELECT COUNT(*) FROM post r WHERE r.parent_id = p.id) AS replyCount " +
         "FROM post p JOIN users u ON p.user_id = u.id ";
 
     private static final java.text.SimpleDateFormat DATE_FMT =
@@ -38,14 +39,16 @@ public class PostRepository extends BaseRepository {
 
     // ── save ──────────────────────────────────────────────────────────────────
     public void save(Post post) {
-        String query = "INSERT INTO post (user_id, created_at, text, private, colla_name, image_path) VALUES (?,?,?,?,?,?)";
+        String query = "INSERT INTO post (user_id, parent_id, created_at, text, private, colla_name, image_path) VALUES (?,?,?,?,?,?,?)";
         try (PreparedStatement st = db.prepareStatement(query)) {
             st.setInt(1, post.getUid());
-            st.setString(2, DATE_FMT.format(post.getPostDateTime()));
-            st.setString(3, post.getContent());
-            st.setInt(4, post.getVisibility());
-            st.setString(5, post.getCollaName());
-            st.setString(6, post.getImagePath());
+            if (post.getParentId() != null) st.setInt(2, post.getParentId());
+            else st.setNull(2, java.sql.Types.INTEGER);
+            st.setString(3, DATE_FMT.format(post.getPostDateTime()));
+            st.setString(4, post.getContent());
+            st.setInt(5, post.getVisibility());
+            st.setString(6, post.getCollaName());
+            st.setString(7, post.getImagePath());
             st.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -64,6 +67,46 @@ public class PostRepository extends BaseRepository {
         }
     }
 
+    // ── deleteAsAdmin (no user_id check) ──────────────────────────────────────
+    public void deleteAsAdmin(Integer id) {
+        String query = "DELETE FROM post WHERE id = ?";
+        try (PreparedStatement st = db.prepareStatement(query)) {
+            st.setInt(1, id);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ── update ────────────────────────────────────────────────────────────────
+    public void update(Integer id, Integer userId, String content) {
+        String query = "UPDATE post SET text = ? WHERE id = ? AND user_id = ?";
+        try (PreparedStatement st = db.prepareStatement(query)) {
+            st.setString(1, content);
+            st.setInt(2, id);
+            st.setInt(3, userId);
+            st.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ── findAllPrivat (admin only) ────────────────────────────────────────────
+    public List<Post> findAllPrivat(Integer adminId) {
+        String query = SELECT_COLS +
+            "WHERE p.private = " + VISIBILITY_PRIVAT + " AND p.parent_id IS NULL " +
+            "ORDER BY p.created_at DESC";
+        return executeQuery(query, adminId);
+    }
+
+    // ── findAllColla (admin only) ─────────────────────────────────────────────
+    public List<Post> findAllColla(Integer adminId) {
+        String query = SELECT_COLS +
+            "WHERE p.private = " + VISIBILITY_COLLA + " AND p.parent_id IS NULL " +
+            "ORDER BY p.created_at DESC";
+        return executeQuery(query, adminId);
+    }
+
     // ── findPrivat ────────────────────────────────────────────────────────────
     /**
      * Posts with visibility=1 visible to the current user:
@@ -72,7 +115,7 @@ public class PostRepository extends BaseRepository {
      */
     public List<Post> findPrivat(Integer userId) {
         String query = SELECT_COLS +
-            "WHERE p.private = " + VISIBILITY_PRIVAT + " " +
+            "WHERE p.private = " + VISIBILITY_PRIVAT + " AND p.parent_id IS NULL " +
             "AND (p.user_id = ? " +
             "     OR p.user_id IN (SELECT followed_id FROM follows WHERE follower_id = ?)) " +
             "ORDER BY p.created_at DESC";
@@ -94,7 +137,7 @@ public class PostRepository extends BaseRepository {
     /** Posts visibility=2 where colla_name matches the current user's colla */
     public List<Post> findColla(String colla, Integer userId) {
         String query = SELECT_COLS +
-            "WHERE p.private = " + VISIBILITY_COLLA + " AND p.colla_name = ? " +
+            "WHERE p.private = " + VISIBILITY_COLLA + " AND p.colla_name = ? AND p.parent_id IS NULL " +
             "ORDER BY p.created_at DESC";
         List<Post> posts = new ArrayList<>();
         try (PreparedStatement st = db.prepareStatement(query)) {
@@ -110,10 +153,10 @@ public class PostRepository extends BaseRepository {
     }
 
     // ── findTots ──────────────────────────────────────────────────────────────
-    /** All posts with visibility=0 */
+    /** All top-level posts with visibility=0 */
     public List<Post> findTots(Integer userId) {
         String query = SELECT_COLS +
-            "WHERE p.private = " + VISIBILITY_TOTS + " " +
+            "WHERE p.private = " + VISIBILITY_TOTS + " AND p.parent_id IS NULL " +
             "ORDER BY p.created_at DESC";
         return executeQuery(query, userId);
     }
@@ -159,10 +202,10 @@ public class PostRepository extends BaseRepository {
     }
 
     // ── findPublicByUser ──────────────────────────────────────────────────────
-    /** All public posts (visibility=0) by a specific user */
+    /** Top-level public posts (visibility=0) by a specific user */
     public List<Post> findPublicByUser(Integer targetUserId, Integer viewerUserId) {
         String query = SELECT_COLS +
-            "WHERE p.private = " + VISIBILITY_TOTS + " AND p.user_id = ? " +
+            "WHERE p.private = " + VISIBILITY_TOTS + " AND p.user_id = ? AND p.parent_id IS NULL " +
             "ORDER BY p.created_at DESC";
         List<Post> posts = new ArrayList<>();
         try (PreparedStatement st = db.prepareStatement(query)) {
@@ -178,15 +221,63 @@ public class PostRepository extends BaseRepository {
     }
 
     // ── findPrivatByUser ──────────────────────────────────────────────────────
-    /** All private posts (visibility=1) by a specific user */
+    /** Top-level private posts (visibility=1) by a specific user */
     public List<Post> findPrivatByUser(Integer targetUserId, Integer viewerUserId) {
         String query = SELECT_COLS +
-            "WHERE p.private = " + VISIBILITY_PRIVAT + " AND p.user_id = ? " +
+            "WHERE p.private = " + VISIBILITY_PRIVAT + " AND p.user_id = ? AND p.parent_id IS NULL " +
             "ORDER BY p.created_at DESC";
         List<Post> posts = new ArrayList<>();
         try (PreparedStatement st = db.prepareStatement(query)) {
             st.setInt(1, viewerUserId);  // likedByMe
             st.setInt(2, targetUserId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) posts.add(mapPost(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return posts;
+    }
+
+    // ── findReplies ───────────────────────────────────────────────────────────
+    /** Direct replies to a post, ordered oldest-first (thread order) */
+    public List<Post> findReplies(Integer parentId, Integer viewerUserId) {
+        String query = SELECT_COLS +
+            "WHERE p.parent_id = ? " +
+            "ORDER BY p.created_at ASC";
+        List<Post> posts = new ArrayList<>();
+        try (PreparedStatement st = db.prepareStatement(query)) {
+            st.setInt(1, viewerUserId);
+            st.setInt(2, parentId);
+            try (ResultSet rs = st.executeQuery()) {
+                while (rs.next()) posts.add(mapPost(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return posts;
+    }
+
+    // ── findRepliesByUser ─────────────────────────────────────────────────────
+    /** All replies made by a user (for profile), with parent post context */
+    public List<Post> findRepliesByUser(Integer userId, Integer viewerUserId) {
+        String query =
+            "SELECT p.id, p.user_id, p.parent_id, p.created_at, p.text, p.private, p.colla_name, p.image_path, " +
+            "       u.name AS uname, u.picture AS userPicture, " +
+            "       (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likeCount, " +
+            "       (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) AS likedByMe, " +
+            "       0 AS replyCount, " +
+            "       pp.text AS parentText, pu.name AS parentUname " +
+            "FROM post p " +
+            "JOIN users u ON p.user_id = u.id " +
+            "LEFT JOIN post pp ON p.parent_id = pp.id " +
+            "LEFT JOIN users pu ON pp.user_id = pu.id " +
+            "WHERE p.parent_id IS NOT NULL AND p.user_id = ? " +
+            "ORDER BY p.created_at DESC";
+        List<Post> posts = new ArrayList<>();
+        try (PreparedStatement st = db.prepareStatement(query)) {
+            st.setInt(1, viewerUserId);
+            st.setInt(2, userId);
             try (ResultSet rs = st.executeQuery()) {
                 while (rs.next()) posts.add(mapPost(rs));
             }
@@ -246,6 +337,13 @@ public class PostRepository extends BaseRepository {
         p.setLikeCount(rs.getInt("likeCount"));
         p.setLikedByMe(rs.getInt("likedByMe"));
         try { p.setImagePath(rs.getString("image_path")); } catch (SQLException ignored) {}
+        try { p.setReplyCount(rs.getInt("replyCount")); } catch (SQLException ignored) {}
+        try {
+            int pid = rs.getInt("parent_id");
+            if (!rs.wasNull()) p.setParentId(pid);
+        } catch (SQLException ignored) {}
+        try { p.setParentText(rs.getString("parentText")); } catch (SQLException ignored) {}
+        try { p.setParentUname(rs.getString("parentUname")); } catch (SQLException ignored) {}
         return p;
     }
 }

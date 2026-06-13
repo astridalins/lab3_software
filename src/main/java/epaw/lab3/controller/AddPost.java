@@ -3,78 +3,56 @@ package epaw.lab3.controller;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.Part;
+import jakarta.servlet.http.*;
 import epaw.lab3.model.Post;
 import epaw.lab3.model.User;
 import epaw.lab3.service.PostService;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @MultipartConfig(
-    maxFileSize      = 5  * 1024 * 1024,   // 5 MB per file
-    maxRequestSize   = 20 * 1024 * 1024,   // 20 MB total
-    fileSizeThreshold = 64 * 1024          // keep parts < 64 KB in memory
+    maxFileSize       = 5  * 1024 * 1024,  // 5 MB per file
+    maxRequestSize    = 20 * 1024 * 1024,  // 20 MB total
+    fileSizeThreshold =      1024 * 1024   // 1 MB: keep small parts in memory
 )
 @WebServlet("/AddPost")
 public class AddPost extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
-    private static final SimpleDateFormat TS_FMT = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        response.setContentType("text/plain;charset=UTF-8");
+        resp.setContentType("text/plain;charset=UTF-8");
 
-        HttpSession session = request.getSession(false);
-        if (session == null) { response.getWriter().write("no-auth"); return; }
+        HttpSession session = req.getSession(false);
+        if (session == null) { resp.getWriter().write("no-auth"); return; }
         User user = (User) session.getAttribute("user");
-        if (user == null) { response.getWriter().write("no-auth"); return; }
+        if (user == null)    { resp.getWriter().write("no-auth"); return; }
 
-        // ── read text fields via getPart (reliable in multipart context) ────
-        String content = readPartAsString(request, "content");
+        // ── 1. Save image first (this also triggers multipart parsing) ──────
+        String imagePath = saveImage(req, user.getUsername());
+
+        // ── 2. Read text fields with getParameter (works after getPart) ─────
+        String content = req.getParameter("content");
+        if (content == null) content = "";
+        content = content.trim();
+
         int visibility = 0;
-        try { visibility = Integer.parseInt(readPartAsString(request, "visibility")); }
+        try { visibility = Integer.parseInt(req.getParameter("visibility")); }
         catch (Exception ignored) {}
 
-        // ── save image if provided ──────────────────────────────────────────
-        String imagePath = null;
-        try {
-            Part filePart = request.getPart("image");
-            if (filePart != null && filePart.getSize() > 0) {
-                String original   = filePart.getSubmittedFileName();
-                String ext        = original.substring(original.lastIndexOf('.'));
-                String fileName   = user.getUsername() + "_" + TS_FMT.format(new Date()) + ext;
-                String uploadsDir = request.getServletContext().getRealPath("/assets/posts");
-                if (uploadsDir != null) {
-                    Files.createDirectories(Paths.get(uploadsDir));
-                    try (InputStream in = filePart.getInputStream()) {
-                        Files.copy(in, Paths.get(uploadsDir, fileName), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    imagePath = "assets/posts/" + fileName;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // need text OR image
+        // ── 3. Need at least text or image ───────────────────────────────────
         if (content.isEmpty() && imagePath == null) {
-            response.getWriter().write("empty");
+            resp.getWriter().write("empty");
             return;
         }
 
+        // ── 4. Build and persist the post ────────────────────────────────────
         Post post = new Post();
         post.setUid(user.getId());
         post.setUname(user.getName());
@@ -82,29 +60,65 @@ public class AddPost extends HttpServlet {
         post.setVisibility(visibility);
         post.setPostDateTime(new Timestamp(System.currentTimeMillis()));
         post.setImagePath(imagePath);
-        if (visibility == 2) post.setCollaName(user.getColla());
+        // ── 5. Handle reply (parent_id) ───────────────────────────────────────
+        String parentIdStr = req.getParameter("parentId");
+        if (parentIdStr != null && !parentIdStr.isBlank()) {
+            try {
+                post.setParentId(Integer.parseInt(parentIdStr));
+                post.setVisibility(0);   // replies are always public-visibility
+                post.setCollaName(null);
+            } catch (NumberFormatException ignored) {}
+        } else if (visibility == 2) {
+            String collaTarget = req.getParameter("collaTarget");
+            if (user.getAdmin() == 1 && collaTarget != null && !collaTarget.isBlank()) {
+                post.setCollaName(collaTarget);
+            } else {
+                post.setCollaName(user.getColla());
+            }
+        }
 
         PostService.getInstance().add(post);
-        response.getWriter().write("ok");
+        resp.getWriter().write("ok");
     }
 
-    /** Read a non-file multipart field as a trimmed String. */
-    private String readPartAsString(HttpServletRequest req, String name) {
+    /**
+     * Saves the uploaded image to assets/posts/ inside the deployed webapp.
+     * Returns the relative path (e.g. "assets/posts/anna_cast_2026-06-13_15-30-00.jpg")
+     * or null if no file was uploaded or saving failed.
+     */
+    private String saveImage(HttpServletRequest req, String username) {
         try {
-            Part part = req.getPart(name);
-            if (part == null) return "";
+            Part part = req.getPart("image");
+            if (part == null || part.getSize() == 0) return null;
+
+            String original = part.getSubmittedFileName();
+            if (original == null || !original.contains(".")) return null;
+
+            String ext      = original.substring(original.lastIndexOf('.')).toLowerCase();
+            String ts       = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
+            String fileName = username + "_" + ts + ext;
+
+            // webapp root: works with Maven Tomcat plugin and standalone Tomcat
+            String webRoot  = req.getServletContext().getRealPath("/");
+            if (webRoot == null) return null;
+
+            Path dir = Paths.get(webRoot, "assets", "posts");
+            Files.createDirectories(dir);
+
             try (InputStream in = part.getInputStream()) {
-                return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).trim();
+                Files.copy(in, dir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
             }
+
+            return "assets/posts/" + fileName;
+
         } catch (Exception e) {
-            // fallback to getParameter
-            String v = req.getParameter(name);
-            return v != null ? v.trim() : "";
+            e.printStackTrace();
+            return null;
         }
     }
 
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        doPost(request, response);
+        doPost(req, resp);
     }
 }

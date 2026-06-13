@@ -10,7 +10,7 @@ $(document).ready(function(){
 });
 
 function showProfileTab(name) {
-    ['privat','public'].forEach(function(t) {
+    ['privat','public','respostes'].forEach(function(t) {
         document.getElementById('ptab-' + t).style.display = (t === name) ? 'block' : 'none';
     });
     document.querySelectorAll('.ptab-btn').forEach(function(b) {
@@ -108,11 +108,9 @@ function cancelEdit() {
           <input class="w3-input w3-border w3-round" list="collesList"
                  name="colla" value="${u.colla}" placeholder="Escriu o selecciona una colla">
           <datalist id="collesList">
-            <option value="Castellers de Vilafranca">
-            <option value="Colla Vella dels Xiquets de Valls">
-            <option value="Colla Joves Xiquets de Valls">
-            <option value="Minyons de Terrassa">
-            <option value="Capgrossos de Mataró">
+            <c:forEach var="c" items="${colles}">
+                <option value="${c.name}">
+            </c:forEach>
           </datalist>
           <span class="field-error w3-text-red w3-small" id="err-colla"></span>
         </div>
@@ -165,6 +163,10 @@ function cancelEdit() {
               onclick="showProfileTab('public')">
         <i class="fa fa-globe"></i> Públic
       </button>
+      <button id="pbtn-respostes" class="ptab-btn w3-bar-item w3-button w3-light-grey w3-round"
+              onclick="showProfileTab('respostes')">
+        <i class="fa fa-reply"></i> Respostes
+      </button>
     </div>
 
     <%-- TAB PRIVAT --%>
@@ -181,7 +183,18 @@ function cancelEdit() {
               <span class="w3-right w3-opacity w3-small">${p.postDateTime}</span>
               <strong>${p.uname}</strong><br>
               <hr class="w3-clear">
-              <p>${p.content}</p>
+              <p class="post-text">${p.content}</p>
+              <div class="post-edit-box" style="display:none; margin-top:8px">
+                <textarea class="w3-input w3-border w3-round" rows="3"></textarea>
+                <div style="margin-top:6px">
+                  <button type="button" class="saveEdit w3-button w3-theme w3-round w3-small">
+                    <i class="fa fa-save"></i> Guardar
+                  </button>
+                  <button type="button" class="cancelEdit w3-button w3-light-grey w3-round w3-small">
+                    <i class="fa fa-times"></i> Cancel·lar
+                  </button>
+                </div>
+              </div>
               <c:if test="${not empty p.imagePath}">
                 <img src="${p.imagePath}" alt="imatge del post"
                      style="max-width:100%; border-radius:10px; margin-bottom:8px; display:block">
@@ -189,6 +202,49 @@ function cancelEdit() {
               <button type="button" class="likeToggle w3-button w3-round w3-small ${p.likedByMe == 1 ? 'w3-blue' : 'w3-light-grey'}"
                       data-liked="${p.likedByMe}">
                 <i class="fa fa-thumbs-up"></i> <span class="likeCount">${p.likeCount}</span>
+              </button>
+              <button type="button" class="editPost w3-button w3-blue w3-round w3-small">
+                <i class="fa fa-pencil"></i> Editar
+              </button>
+              <button type="button" class="delPost w3-button w3-red w3-round w3-small">
+                <i class="fa fa-trash"></i> Eliminar
+              </button>
+            </div>
+          </c:forEach>
+        </c:otherwise>
+      </c:choose>
+    </div>
+
+    <%-- TAB RESPOSTES --%>
+    <div id="ptab-respostes" style="display:none">
+      <c:choose>
+        <c:when test="${empty ownReplies}">
+          <p class="w3-panel w3-white w3-round w3-opacity">Encara no has fet cap resposta.</p>
+        </c:when>
+        <c:otherwise>
+          <c:forEach var="r" items="${ownReplies}">
+            <div id="${r.id}" class="w3-card w3-white w3-round w3-padding w3-margin-bottom w3-animate-opacity">
+              <div class="w3-margin-bottom" style="background:#e8f4fd; border-radius:6px; padding:6px 10px; font-size:12px; color:#555">
+                <i class="fa fa-reply" style="color:#2196F3"></i>
+                <strong>Resposta</strong>
+                <c:if test="${not empty r.parentUname}"> a <em>${r.parentUname}</em></c:if>:
+                <c:if test="${not empty r.parentText}">
+                  "<c:out value="${r.parentText.length() > 80 ? r.parentText.substring(0,80).concat('…') : r.parentText}"/>"
+                </c:if>
+              </div>
+              <img src="${empty r.userPicture ? 'assets/default_avatar.png' : r.userPicture}"
+                   class="w3-left w3-circle w3-margin-right" style="width:40px;height:40px;object-fit:cover">
+              <span class="w3-right w3-opacity w3-small">${r.postDateTime}</span>
+              <strong>${r.uname}</strong><br>
+              <hr class="w3-clear">
+              <p>${r.content}</p>
+              <c:if test="${not empty r.imagePath}">
+                <img src="${r.imagePath}" style="max-width:100%; border-radius:10px; margin-bottom:8px; display:block">
+              </c:if>
+              <button type="button"
+                      class="likeToggle w3-button w3-round w3-small ${r.likedByMe == 1 ? 'w3-blue' : 'w3-light-grey'}"
+                      data-liked="${r.likedByMe}">
+                <i class="fa fa-thumbs-up"></i> <span class="likeCount">${r.likeCount}</span>
               </button>
               <button type="button" class="delPost w3-button w3-red w3-round w3-small">
                 <i class="fa fa-trash"></i> Eliminar
@@ -213,7 +269,18 @@ function cancelEdit() {
               <span class="w3-right w3-opacity w3-small">${p.postDateTime}</span>
               <strong>${p.uname}</strong><br>
               <hr class="w3-clear">
-              <p>${p.content}</p>
+              <p class="post-text">${p.content}</p>
+              <div class="post-edit-box" style="display:none; margin-top:8px">
+                <textarea class="w3-input w3-border w3-round" rows="3"></textarea>
+                <div style="margin-top:6px">
+                  <button type="button" class="saveEdit w3-button w3-theme w3-round w3-small">
+                    <i class="fa fa-save"></i> Guardar
+                  </button>
+                  <button type="button" class="cancelEdit w3-button w3-light-grey w3-round w3-small">
+                    <i class="fa fa-times"></i> Cancel·lar
+                  </button>
+                </div>
+              </div>
               <c:if test="${not empty p.imagePath}">
                 <img src="${p.imagePath}" alt="imatge del post"
                      style="max-width:100%; border-radius:10px; margin-bottom:8px; display:block">
@@ -221,6 +288,9 @@ function cancelEdit() {
               <button type="button" class="likeToggle w3-button w3-round w3-small ${p.likedByMe == 1 ? 'w3-blue' : 'w3-light-grey'}"
                       data-liked="${p.likedByMe}">
                 <i class="fa fa-thumbs-up"></i> <span class="likeCount">${p.likeCount}</span>
+              </button>
+              <button type="button" class="editPost w3-button w3-blue w3-round w3-small">
+                <i class="fa fa-pencil"></i> Editar
               </button>
               <button type="button" class="delPost w3-button w3-red w3-round w3-small">
                 <i class="fa fa-trash"></i> Eliminar

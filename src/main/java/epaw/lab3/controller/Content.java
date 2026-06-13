@@ -21,12 +21,12 @@ public class Content extends HttpServlet {
 			throws ServletException, IOException {
 
 		HttpSession session = request.getSession(false);
-		String view = "MainPage.jsp";
 
-		if (session == null || session.getAttribute("user") == null)
-			view = "Login.jsp";
-
-		request.getRequestDispatcher(view).forward(request, response);
+		if (session != null && session.getAttribute("user") != null) {
+			request.getRequestDispatcher("MainPage.jsp").forward(request, response);
+		} else {
+			response.sendRedirect("AnonMainPage");
+		}
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)

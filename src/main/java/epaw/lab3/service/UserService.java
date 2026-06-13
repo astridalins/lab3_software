@@ -150,6 +150,11 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    // ─── deleteUser ───────────────────────────────────────────────────────────
+    public void deleteUser(Integer id) {
+        userRepository.deleteById(id);
+    }
+
     // ─── follow ───────────────────────────────────────────────────────────────
     public void follow(Integer followerId, Integer followedId) {
         userRepository.followUser(followerId, followedId);

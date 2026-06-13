@@ -1,6 +1,7 @@
 package epaw.lab3.controller;
 
 import epaw.lab3.model.User;
+import epaw.lab3.service.CollaService;
 import epaw.lab3.service.PostService;
 
 import jakarta.servlet.ServletException;
@@ -22,7 +23,9 @@ public class Profile extends HttpServlet {
             PostService svc = PostService.getInstance();
             request.setAttribute("ownPublicPosts", svc.getPublicPostsByUser(user.getId(), user.getId()));
             request.setAttribute("ownPrivatPosts", svc.getPrivatPostsByUser(user.getId(), user.getId()));
+            request.setAttribute("ownReplies",     svc.getRepliesByUser(user.getId(), user.getId()));
         }
+        request.setAttribute("colles", CollaService.getInstance().getTotes());
         request.getRequestDispatcher("Profile.jsp").forward(request, response);
     }
 

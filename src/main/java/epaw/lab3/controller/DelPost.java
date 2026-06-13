@@ -24,7 +24,11 @@ public class DelPost extends HttpServlet {
             if (user != null) {
                 try {
                     int postId = Integer.parseInt(request.getParameter("id"));
-                    PostService.getInstance().delete(postId, user.getId());
+                    if (user.getAdmin() == 1) {
+                        PostService.getInstance().deleteAsAdmin(postId);
+                    } else {
+                        PostService.getInstance().delete(postId, user.getId());
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

@@ -21,29 +21,39 @@ public class ViewUserProfile extends HttpServlet {
         User viewer = (session != null) ? (User) session.getAttribute("user") : null;
 
         String uidParam = request.getParameter("uid");
-        if (uidParam == null || viewer == null) {
-            response.sendRedirect("MainPage");
+        if (uidParam == null) {
+            response.sendRedirect(viewer != null ? "MainPage" : "AnonMainPage");
             return;
         }
 
         int targetId;
         try { targetId = Integer.parseInt(uidParam); }
-        catch (NumberFormatException e) { response.sendRedirect("MainPage"); return; }
+        catch (NumberFormatException e) {
+            response.sendRedirect(viewer != null ? "MainPage" : "AnonMainPage");
+            return;
+        }
 
         UserRepository userRepo = UserRepository.getInstance();
         Optional<User> targetOpt = userRepo.findFullById(targetId);
-        if (targetOpt.isEmpty()) { response.sendRedirect("MainPage"); return; }
+        if (targetOpt.isEmpty()) {
+            response.sendRedirect(viewer != null ? "MainPage" : "AnonMainPage");
+            return;
+        }
 
         User target = targetOpt.get();
-        boolean isFollowing = userRepo.isFollowing(viewer.getId(), targetId);
+        boolean isAnonymous = (viewer == null);
+        int viewerId = isAnonymous ? 0 : viewer.getId();
+        boolean isFollowing = !isAnonymous && userRepo.isFollowing(viewerId, targetId);
 
         PostService svc = PostService.getInstance();
         request.setAttribute("targetUser",  target);
         request.setAttribute("isFollowing", isFollowing);
-        request.setAttribute("publicPosts", svc.getPublicPostsByUser(targetId, viewer.getId()));
+        request.setAttribute("isAnonymous", isAnonymous);
+        request.setAttribute("publicPosts", svc.getPublicPostsByUser(targetId, viewerId));
         if (isFollowing) {
-            request.setAttribute("privatPosts", svc.getPrivatPostsByUser(targetId, viewer.getId()));
+            request.setAttribute("privatPosts", svc.getPrivatPostsByUser(targetId, viewerId));
         }
+        request.setAttribute("userReplies", svc.getRepliesByUser(targetId, viewerId));
 
         request.getRequestDispatcher("UserProfile.jsp").forward(request, response);
     }

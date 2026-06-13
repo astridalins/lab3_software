@@ -50,8 +50,20 @@ CREATE TABLE follows (
     FOREIGN KEY (followed_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE colla (
+    name VARCHAR(200) PRIMARY KEY
+);
+
+INSERT INTO colla (name) VALUES
+('Castellers de Vilafranca'),
+('Colla Vella dels Xiquets de Valls'),
+('Colla Joves Xiquets de Valls'),
+('Minyons de Terrassa'),
+('Capgrossos de Mataró');
+
 CREATE TABLE diada (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(200),
     dia TEXT NOT NULL,
     location VARCHAR(100),
     colla VARCHAR(100),
