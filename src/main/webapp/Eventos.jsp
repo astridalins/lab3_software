@@ -17,8 +17,10 @@
             $('.star').removeClass('hover'); paint();
         })
         .on('click.star', '.star', function() {
-            currentRating = $(this).index() + 1; paint();
-            $('#ratingText').text('Has valorat amb ' + currentRating + ' estrella(es)');
+            currentRating = $(this).index() + 1;
+            paint();
+            $('#ratingText').text('Has seleccionat ' + currentRating + ' estrella' + (currentRating > 1 ? 'es' : ''));
+            $('#ratingValue').val(currentRating);
         });
     paint();
     $('#lcolumn').html('');
@@ -126,11 +128,21 @@
         <div class="w3-card w3-white w3-round w3-padding">
             <c:choose>
                 <c:when test="${not empty selected}">
+
                     <%-- Header --%>
-                    <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px">
-                        <div>
-                            <h2 style="margin:0 0 4px" class="w3-text-theme">${selected.name}</h2>
-                            <span class="w3-opacity w3-small">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:4px">
+                        <div style="flex:1; min-width:0">
+                            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+                                <h2 style="margin:0" class="w3-text-theme">${selected.name}</h2>
+                                <c:if test="${not empty avgRating}">
+                                    <span style="background:#f5c518; color:#333; font-weight:bold;
+                                                 padding:2px 10px; border-radius:20px; font-size:14px;
+                                                 white-space:nowrap">
+                                        ★ ${avgRating}
+                                    </span>
+                                </c:if>
+                            </div>
+                            <span class="w3-opacity w3-small" style="margin-top:4px; display:block">
                                 <i class="fa fa-calendar-o"></i> ${selected.dia}
                                 &nbsp;·&nbsp;
                                 <i class="fa fa-map-marker"></i> ${selected.location}
@@ -147,7 +159,7 @@
 
                     <%-- Colles participants --%>
                     <c:if test="${not empty selected.colla}">
-                    <div style="margin-bottom:14px">
+                    <div style="margin:10px 0 14px">
                         <strong class="w3-small w3-text-grey">COLLES PARTICIPANTS</strong><br>
                         <c:forEach var="c" items="${selected.colles}">
                             <span class="w3-tag w3-theme w3-round-large"
@@ -158,11 +170,12 @@
                     </div>
                     </c:if>
 
-                    <hr>
+                    <hr style="margin:14px 0">
 
-                    <%-- Star rating --%>
-                    <div class="w3-margin-top">
-                        <strong>Valora aquesta diada</strong>
+                    <%-- ── Rating form (only if user can review and hasn't yet) ── --%>
+                    <c:if test="${canReview and not hasReviewed}">
+                    <div style="margin-bottom:16px; padding:12px; background:#f9f9f9; border-radius:6px">
+                        <strong style="font-size:14px">Valora aquesta diada</strong>
                         <div class="rating" style="margin-top:6px">
                             <span class="star">★</span>
                             <span class="star">★</span>
@@ -170,8 +183,56 @@
                             <span class="star">★</span>
                             <span class="star">★</span>
                         </div>
-                        <p id="ratingText" class="w3-small w3-text-grey" style="margin-top:4px"></p>
+                        <input type="hidden" id="ratingValue" value="0">
+                        <p id="ratingText" class="w3-small w3-text-grey" style="margin:4px 0 8px"></p>
+                        <button type="button" class="submitRating w3-button w3-theme w3-round w3-small"
+                                data-diada="${selected.id}">
+                            <i class="fa fa-star"></i> Enviar valoració
+                        </button>
                     </div>
+                    </c:if>
+
+                    <c:if test="${canReview and hasReviewed}">
+                    <div style="margin-bottom:16px; padding:10px 14px; background:#e8f5e9;
+                                border-radius:6px; font-size:13px; color:#2e7d32">
+                        <i class="fa fa-check-circle"></i> Ja has valorat aquesta diada.
+                    </div>
+                    </c:if>
+
+                    <%-- ── Reviews list ── --%>
+                    <c:choose>
+                        <c:when test="${not empty reviews}">
+                            <strong class="w3-small w3-text-grey">VALORACIONS (${reviews.size()})</strong>
+                            <div style="margin-top:8px">
+                                <c:forEach var="r" items="${reviews}">
+                                <div style="display:flex; align-items:flex-start; gap:10px;
+                                            padding:8px 0; border-bottom:1px solid #f0f0f0">
+                                    <div style="width:32px; height:32px; border-radius:50%;
+                                                background:var(--w3-theme); color:#fff;
+                                                display:flex; align-items:center; justify-content:center;
+                                                font-size:13px; font-weight:bold; flex-shrink:0">
+                                        ${r.uname.substring(0,1).toUpperCase()}
+                                    </div>
+                                    <div style="flex:1; min-width:0">
+                                        <div style="display:flex; align-items:center; justify-content:space-between">
+                                            <span style="font-weight:bold; font-size:13px">${r.uname}</span>
+                                            <span style="font-size:11px; color:#aaa">${r.createdDate}</span>
+                                        </div>
+                                        <div style="color:#f5c518; font-size:16px; line-height:1.3">
+                                            <c:forEach begin="1" end="${r.value}" var="s">★</c:forEach><c:forEach begin="${r.value + 1}" end="5" var="s"><span style="color:#ddd">★</span></c:forEach>
+                                        </div>
+                                    </div>
+                                </div>
+                                </c:forEach>
+                            </div>
+                        </c:when>
+                        <c:otherwise>
+                            <p class="w3-small w3-text-grey" style="margin:0">
+                                Encara no hi ha valoracions per aquesta diada.
+                            </p>
+                        </c:otherwise>
+                    </c:choose>
+
                 </c:when>
                 <c:otherwise>
                     <div class="w3-center" style="padding:40px 20px; color:#999">

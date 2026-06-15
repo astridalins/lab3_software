@@ -74,10 +74,10 @@ CREATE TABLE review (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     diada_id INT NOT NULL,
     user_id INT NOT NULL,
-    value INT,
-    comment VARCHAR(255),
-    espectador INTEGER NOT NULL,
+    value INT NOT NULL,
+    espectador INTEGER NOT NULL DEFAULT 0,
     created_at TEXT,
+    UNIQUE(diada_id, user_id),
     FOREIGN KEY (diada_id) REFERENCES diada(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

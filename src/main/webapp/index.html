@@ -360,6 +360,29 @@
 				});
 			});
 
+			/* Submit star rating */
+			$(document).on("click", ".submitRating", function () {
+				var diadaId = $(this).data("diada");
+				var value   = parseInt($("#ratingValue").val() || "0", 10);
+				if (!value || value < 1 || value > 5) {
+					alert("Selecciona una valoració entre 1 i 5 estrelles.");
+					return;
+				}
+				var btn = $(this).prop("disabled", true);
+				$.post("SubmitRating", { diadaId: diadaId, value: value }, function (resp) {
+					resp = (resp || "").trim();
+					if (resp === "ok") {
+						$("#content").load("Eventos?diadaId=" + diadaId);
+					} else {
+						btn.prop("disabled", false);
+						if (resp === "noauth")          alert("Has d'estar identificat com a casteller per valorar.");
+						else if (resp === "notauthorized") alert("Només poden valorar els membres de les colles participants.");
+						else if (resp === "alreadyreviewed") alert("Ja has valorat aquesta diada.");
+						else                            alert("Error en enviar la valoració.");
+					}
+				}).fail(function () { btn.prop("disabled", false); });
+			});
+
 			/* Like / Unlike toggle (MainPage) */
 			$(document).on("click", ".likeToggle", function (event) {
 				event.preventDefault();
