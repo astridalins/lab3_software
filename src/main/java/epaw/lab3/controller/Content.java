@@ -22,9 +22,9 @@ public class Content extends HttpServlet {
 
 		HttpSession session = request.getSession(false);
 
-		if (session != null && session.getAttribute("user") != null) {
+		if (session != null && session.getAttribute("user") != null) {//sessio iniciada
 			request.getRequestDispatcher("MainPage.jsp").forward(request, response);
-		} else {
+		} else { //sessio tancada
 			response.sendRedirect("AnonMainPage");
 		}
 	}

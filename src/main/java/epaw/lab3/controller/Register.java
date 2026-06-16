@@ -42,7 +42,7 @@ public class Register extends HttpServlet {
 
 		try {
 			BeanUtils.populate(user, request.getParameterMap());
-			String picturePath = userService.saveProfilePicture(request.getPart("picture"), user.getName());
+			String picturePath = userService.saveProfilePicture(request.getPart("picture"), user.getUsername());
 			user.setPicture(picturePath);
 		} catch (Exception e) {
 			e.printStackTrace();

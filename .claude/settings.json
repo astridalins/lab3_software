@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Remove-Item \"c:\\\\Users\\\\astri\\\\OneDrive\\\\Escritorio\\\\lab3_software\\\\setup_reviews.py\" -Confirm:$false)"
+      "PowerShell(Remove-Item \"c:\\\\Users\\\\astri\\\\OneDrive\\\\Escritorio\\\\lab3_software\\\\setup_reviews.py\" -Confirm:$false)",
+      "Read(//c/Users/astri/OneDrive/Escritorio/lab3_software/src/main/webapp/**)",
+      "PowerShell(python -c \"from fpdf import FPDF; print\\('ok'\\)\")",
+      "PowerShell(Remove-Item \"c:\\\\Users\\\\astri\\\\OneDrive\\\\Escritorio\\\\lab3_software\\\\make_reviews_pdf.py\" -Confirm:$false)"
     ]
   }
 }

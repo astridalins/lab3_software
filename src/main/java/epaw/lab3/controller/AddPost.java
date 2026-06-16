@@ -81,11 +81,6 @@ public class AddPost extends HttpServlet {
         resp.getWriter().write("ok");
     }
 
-    /**
-     * Saves the uploaded image to assets/posts/ inside the deployed webapp.
-     * Returns the relative path (e.g. "assets/posts/anna_cast_2026-06-13_15-30-00.jpg")
-     * or null if no file was uploaded or saving failed.
-     */
     private String saveImage(HttpServletRequest req, String username) {
         try {
             Part part = req.getPart("image");
@@ -98,18 +93,14 @@ public class AddPost extends HttpServlet {
             String ts       = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
             String fileName = username + "_" + ts + ext;
 
-            // webapp root: works with Maven Tomcat plugin and standalone Tomcat
-            String webRoot  = req.getServletContext().getRealPath("/");
-            if (webRoot == null) return null;
-
-            Path dir = Paths.get(webRoot, "assets", "posts");
+            Path dir = Paths.get("EXTERNAL_RESOURCES", "posts");
             Files.createDirectories(dir);
 
             try (InputStream in = part.getInputStream()) {
                 Files.copy(in, dir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
             }
 
-            return "assets/posts/" + fileName;
+            return "posts/" + fileName;
 
         } catch (Exception e) {
             e.printStackTrace();
