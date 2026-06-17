@@ -26,7 +26,7 @@ public class Profile extends HttpServlet {
             request.setAttribute("ownReplies",     svc.getRepliesByUser(user.getId(), user.getId()));
         }
         request.setAttribute("colles", CollaService.getInstance().getTotes());
-        request.getRequestDispatcher("Profile.jsp").forward(request, response);
+        request.getRequestDispatcher("Profile.jsp").forward(request, response); //connects to the profile page JSP
     }
 
     @Override

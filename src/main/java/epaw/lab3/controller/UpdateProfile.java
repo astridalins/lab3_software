@@ -36,6 +36,7 @@ public class UpdateProfile extends HttpServlet {
         else
             updated.setPosicions(null);
 
+        //delega tasca
         Map<String, String> errors = UserService.getInstance().updateProfile(updated, current);
 
         if (errors.isEmpty()) {

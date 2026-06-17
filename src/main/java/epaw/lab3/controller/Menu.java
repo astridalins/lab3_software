@@ -26,7 +26,8 @@ public class Menu extends HttpServlet {
 			if (session != null && session.getAttribute("user") != null) {
 
 				User user = (User) session.getAttribute("user");
-
+				
+				//Tipus de menu (admin o normal)
 				if (user.getAdmin() == 1) {
 					view = "MenuAdmin.html";
 				} else {
@@ -34,6 +35,7 @@ public class Menu extends HttpServlet {
 				}
 			}
 
+			//envia a index.html
 			request.getRequestDispatcher(view).forward(request, response);
 	}
 

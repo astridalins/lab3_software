@@ -114,7 +114,7 @@
             value="${user.email}"
             title="Introdueix un email vàlid." />
     </div>
-
+    //
     <button type="submit" class="w3-button w3-theme w3-section">Submit Registration</button>
 
 </form>
