@@ -61,7 +61,7 @@ public class Eventos extends HttpServlet {
             } catch (NumberFormatException ignored) {}
         }
 
-        req.getRequestDispatcher("Eventos.jsp").forward(req, resp);
+        req.getRequestDispatcher("Eventos.jsp").forward(req, resp); //render the JSP page
     }
 
     @Override
