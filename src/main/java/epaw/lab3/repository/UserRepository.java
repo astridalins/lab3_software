@@ -166,87 +166,6 @@ public class UserRepository extends BaseRepository {
         return Optional.empty();
     }
 
-    // ── followUser ────────────────────────────────────────────────────────────
-    public void followUser(Integer followerId, Integer followedId) {
-        String query = "INSERT INTO follows (follower_id, followed_id) VALUES (?,?)";
-        try (PreparedStatement st = db.prepareStatement(query)) {
-            st.setInt(1, followerId);
-            st.setInt(2, followedId);
-            st.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // ── unfollowUser ──────────────────────────────────────────────────────────
-    public void unfollowUser(Integer followerId, Integer followedId) {
-        String query = "DELETE FROM follows WHERE follower_id = ? AND followed_id = ?";
-        try (PreparedStatement st = db.prepareStatement(query)) {
-            st.setInt(1, followerId);
-            st.setInt(2, followedId);
-            st.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // ── findNotFollowed ───────────────────────────────────────────────────────
-    public Optional<List<User>> findNotFollowed(Integer userId, Integer start, Integer end) {
-        String query =
-            "SELECT id, name, username, picture FROM users " +
-            "WHERE id NOT IN (SELECT followed_id FROM follows WHERE follower_id = ?) " +
-            "AND id <> ? ORDER BY name LIMIT ?,?";
-        try (PreparedStatement st = db.prepareStatement(query)) {
-            st.setInt(1, userId);
-            st.setInt(2, userId);
-            st.setInt(3, start);
-            st.setInt(4, end);
-            try (ResultSet rs = st.executeQuery()) {
-                List<User> users = new ArrayList<>();
-                while (rs.next()) {
-                    User user = new User();
-                    user.setId(rs.getInt("id"));
-                    user.setName(rs.getString("name"));
-                    user.setUsername(rs.getString("username"));
-                    user.setPicture(rs.getString("picture"));
-                    users.add(user);
-                }
-                return Optional.of(users);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return Optional.empty();
-    }
-
-    // ── findFollowed ──────────────────────────────────────────────────────────
-    public Optional<List<User>> findFollowed(Integer userId, Integer start, Integer end) {
-        String query =
-            "SELECT u.id, u.name, u.username, u.picture " +
-            "FROM users u INNER JOIN follows f ON u.id = f.followed_id " +
-            "WHERE f.follower_id = ? ORDER BY u.name LIMIT ?,?";
-        try (PreparedStatement st = db.prepareStatement(query)) {
-            st.setInt(1, userId);
-            st.setInt(2, start);
-            st.setInt(3, end);
-            try (ResultSet rs = st.executeQuery()) {
-                List<User> users = new ArrayList<>();
-                while (rs.next()) {
-                    User user = new User();
-                    user.setId(rs.getInt("id"));
-                    user.setName(rs.getString("name"));
-                    user.setUsername(rs.getString("username"));
-                    user.setPicture(rs.getString("picture"));
-                    users.add(user);
-                }
-                return Optional.of(users);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return Optional.empty();
-    }
-
     // ── update ────────────────────────────────────────────────────────────────
     public void update(User user) {
         String query = "UPDATE users SET name=?, email=?, location=?, colla=?, posicions=? WHERE id=?";
@@ -261,21 +180,6 @@ public class UserRepository extends BaseRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-
-    // ── isFollowing ───────────────────────────────────────────────────────────
-    public boolean isFollowing(Integer followerId, Integer followedId) {
-        String query = "SELECT COUNT(*) FROM follows WHERE follower_id = ? AND followed_id = ?";
-        try (PreparedStatement st = db.prepareStatement(query)) {
-            st.setInt(1, followerId);
-            st.setInt(2, followedId);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return rs.getInt(1) > 0;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
     }
 
     // ── findFullById ──────────────────────────────────────────────────────────

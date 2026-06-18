@@ -161,46 +161,6 @@ public class PostRepository extends BaseRepository {
         return executeQuery(query, userId);
     }
 
-    // ── addLike ───────────────────────────────────────────────────────────────
-    public int addLike(Integer userId, Integer postId) {
-        String ins = "INSERT OR IGNORE INTO likes (user_id, post_id) VALUES (?,?)";
-        try (PreparedStatement st = db.prepareStatement(ins)) {
-            st.setInt(1, userId);
-            st.setInt(2, postId);
-            st.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return getLikeCount(postId);
-    }
-
-    // ── removeLike ────────────────────────────────────────────────────────────
-    public int removeLike(Integer userId, Integer postId) {
-        String del = "DELETE FROM likes WHERE user_id = ? AND post_id = ?";
-        try (PreparedStatement st = db.prepareStatement(del)) {
-            st.setInt(1, userId);
-            st.setInt(2, postId);
-            st.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return getLikeCount(postId);
-    }
-
-    // ── getLikeCount ──────────────────────────────────────────────────────────
-    public int getLikeCount(Integer postId) {
-        String q = "SELECT COUNT(*) FROM likes WHERE post_id = ?";
-        try (PreparedStatement st = db.prepareStatement(q)) {
-            st.setInt(1, postId);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
     // ── findPublicByUser ──────────────────────────────────────────────────────
     /** Top-level public posts (visibility=0) by a specific user */
     public List<Post> findPublicByUser(Integer targetUserId, Integer viewerUserId) {

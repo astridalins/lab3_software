@@ -1,7 +1,7 @@
 package epaw.lab3.controller;
 
 import epaw.lab3.model.User;
-import epaw.lab3.service.UserService;
+import epaw.lab3.service.AdminService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -32,7 +32,7 @@ public class DeleteUser extends HttpServlet {
                 response.getWriter().write("self");
                 return;
             }
-            UserService.getInstance().deleteUser(targetId);
+            AdminService.getInstance().deleteUser(targetId);
             response.getWriter().write("ok");
         } catch (NumberFormatException e) {
             response.getWriter().write("error");

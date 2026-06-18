@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import epaw.lab3.model.User;
-import epaw.lab3.service.UserService;
+import epaw.lab3.service.FollowsService;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,7 +26,7 @@ public class Followed extends HttpServlet {
             User user = (User) session.getAttribute("user");
             if (user != null) {
                 try {
-                    users = UserService.getInstance().getFollowedUsers(user.getId(), 0, 20);
+                    users = FollowsService.getInstance().getFollowedUsers(user.getId(), 0, 20);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

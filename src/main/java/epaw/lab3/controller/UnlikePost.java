@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import epaw.lab3.model.User;
-import epaw.lab3.service.PostService;
+import epaw.lab3.service.LikeService;
 
 import java.io.IOException;
 
@@ -24,7 +24,7 @@ public class UnlikePost extends HttpServlet {
             if (user != null) {
                 try {
                     int postId = Integer.parseInt(request.getParameter("id"));
-                    int newCount = PostService.getInstance().unlike(user.getId(), postId);
+                    int newCount = LikeService.getInstance().unlike(user.getId(), postId);
                     response.setContentType("text/plain");
                     response.getWriter().write(String.valueOf(newCount));
                     return;

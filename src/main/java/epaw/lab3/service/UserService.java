@@ -16,9 +16,9 @@ import java.nio.file.StandardCopyOption;
 public class UserService {
 
     private static UserService instance;
-    private UserRepository userRepository;
+    protected UserRepository userRepository;
 
-    private UserService() {
+    protected UserService() {
         this.userRepository = UserRepository.getInstance();
     }
 
@@ -148,31 +148,6 @@ public class UserService {
     // ─── getAllUsers ──────────────────────────────────────────────────────────
     public java.util.List<User> getAllUsers() {
         return userRepository.findAll();
-    }
-
-    // ─── deleteUser ───────────────────────────────────────────────────────────
-    public void deleteUser(Integer id) {
-        userRepository.deleteById(id);
-    }
-
-    // ─── follow ───────────────────────────────────────────────────────────────
-    public void follow(Integer followerId, Integer followedId) {
-        userRepository.followUser(followerId, followedId);
-    }
-
-    // ─── unfollow ─────────────────────────────────────────────────────────────
-    public void unfollow(Integer followerId, Integer followedId) {
-        userRepository.unfollowUser(followerId, followedId);
-    }
-
-    // ─── getFollowedUsers ─────────────────────────────────────────────────────
-    public java.util.List<User> getFollowedUsers(Integer userId, Integer start, Integer end) {
-        return userRepository.findFollowed(userId, start, end).orElse(null);
-    }
-
-    // ─── getNotFollowedUsers ──────────────────────────────────────────────────
-    public java.util.List<User> getNotFollowedUsers(Integer userId, Integer start, Integer end) {
-        return userRepository.findNotFollowed(userId, start, end).orElse(null);
     }
 
     // ─── updateProfile ───────────────────────────────────────────────────────

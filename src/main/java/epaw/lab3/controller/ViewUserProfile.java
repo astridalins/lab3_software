@@ -2,6 +2,7 @@ package epaw.lab3.controller;
 
 import epaw.lab3.model.User;
 import epaw.lab3.repository.UserRepository;
+import epaw.lab3.service.FollowsService;
 import epaw.lab3.service.PostService;
 
 import jakarta.servlet.ServletException;
@@ -43,7 +44,7 @@ public class ViewUserProfile extends HttpServlet {
         User target = targetOpt.get();
         boolean isAnonymous = (viewer == null);
         int viewerId = isAnonymous ? 0 : viewer.getId();
-        boolean isFollowing = !isAnonymous && userRepo.isFollowing(viewerId, targetId);
+        boolean isFollowing = !isAnonymous && FollowsService.getInstance().isFollowing(viewerId, targetId);
 
         PostService svc = PostService.getInstance();
         request.setAttribute("targetUser",  target);

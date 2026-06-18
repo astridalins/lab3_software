@@ -58,15 +58,6 @@ public class PostService {
         return postRepository.findTots(userId);
     }
 
-    // ── likes ─────────────────────────────────────────────────────────────────
-    public int like(Integer userId, Integer postId) {
-        return postRepository.addLike(userId, postId);
-    }
-
-    public int unlike(Integer userId, Integer postId) {
-        return postRepository.removeLike(userId, postId);
-    }
-
     // ── replies ───────────────────────────────────────────────────────────────
     public List<Post> getRepliesByPost(Integer parentId, Integer viewerUserId) {
         return postRepository.findReplies(parentId, viewerUserId);

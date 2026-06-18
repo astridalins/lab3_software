@@ -1,7 +1,7 @@
 package epaw.lab3.controller;
 
 import epaw.lab3.model.User;
-import epaw.lab3.service.UserService;
+import epaw.lab3.service.FollowsService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -21,7 +21,7 @@ public class UsersSearch extends HttpServlet {
         User currentUser = (session != null) ? (User) session.getAttribute("user") : null;
 
         if (currentUser != null) {
-            UserService svc = UserService.getInstance();
+            FollowsService svc = FollowsService.getInstance();
             List<User> followed    = svc.getFollowedUsers(currentUser.getId(), 0, 100);
             List<User> notFollowed = svc.getNotFollowedUsers(currentUser.getId(), 0, 100);
             request.setAttribute("followedUsers",    followed);
